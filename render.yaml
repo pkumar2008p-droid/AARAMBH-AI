@@ -1,8 +1,7 @@
 services:
   - type: web
-    name: aaramh-ai
+    name: aarambh-ai
     env: python
     rootDir: backend
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r ../requirements.txt
     startCommand: gunicorn app:app
-    

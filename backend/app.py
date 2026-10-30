@@ -19,7 +19,7 @@ from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import generate_password_hash, check_password_hash
-from core import *
+from backend.core import *
 import risk, train as trainer
 from functools import wraps
 from urllib.parse import urlparse
