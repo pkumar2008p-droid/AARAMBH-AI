@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: aaramh-ai
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: SUPABASE_URL
+        value: "https://rdmzuqduqtmzdykhlsff.supabase.co"
+      - key: SUPABASE_KEY
+        value: "sb_secret_CqLELjMU3oRsheQ805XyAQ_q4o2_I7O"
