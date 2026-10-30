@@ -1,44 +1,104 @@
-"""AARAMBH Follow-up Navigator - secure backend (Flask + Supabase). Run: gunicorn app:app"""
-import os, re, secrets, hmac
+"""AARAMBH Follow-up Navigator — Flask + Supabase backend.
 
-from dotenv import load_dotenv
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+Render start command (from the repository root):
+    gunicorn backend.app:app
+"""
 
+import hmac
+import os
+import re
+import secrets
 from datetime import timedelta
 from functools import wraps
-from flask import Flask, request, jsonify
+from pathlib import Path
+from urllib.parse import urlparse
+
+import requests as http
+from dotenv import load_dotenv
+from flask import Flask, g, jsonify, request, send_from_directory
 from flask_cors import CORS
-
-app = Flask(__name__)
-CORS(app)
-from urllib.parse import urlparse
-import requests as http
-from flask import Flask, request, jsonify, g, send_from_directory
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
-from werkzeug.security import generate_password_hash, check_password_hash
-from backend.core import *
-import risk, train as trainer
-from functools import wraps
-from urllib.parse import urlparse
-import requests as http
-from flask import Flask, request, jsonify, g, send_from_directory
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from werkzeug.exceptions import HTTPException
-from werkzeug.middleware.proxy_fix import ProxyFix
-from werkzeug.security import generate_password_hash, check_password_hash
-from core import *
-import risk, train as trainer
+from werkzeug.security import check_password_hash, generate_password_hash
 
-app = Flask(__name__, static_folder="static", static_url_path="/static")
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)       # Render sits behind one proxy
+# Resolve paths from this file, not from Render's current working directory.
+BACKEND_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = BACKEND_DIR.parent
+STATIC_DIR = PROJECT_ROOT / "static"
+if not STATIC_DIR.is_dir():
+    # Also support projects that keep the frontend inside backend/static.
+    STATIC_DIR = BACKEND_DIR / "static"
+
+# Load a local .env for development. Render environment variables take precedence.
+load_dotenv(PROJECT_ROOT / ".env", override=False)
+
+# This file is loaded as the `backend.app` package module by Gunicorn.
+# Keep all backend modules in the same package to avoid import-path ambiguity.
+from .core import *  # noqa: F401,F403,E402
+from . import risk  # noqa: E402
+from . import train as trainer  # noqa: E402
+
+app = Flask(
+    __name__,
+    static_folder=str(STATIC_DIR),
+    static_url_path="/static",
+)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.config.update(MAX_CONTENT_LENGTH=64 * 1024, JSON_SORT_KEYS=False)
-limiter = Limiter(get_remote_address, app=app, default_limits=["600/hour", "90/minute"], storage_uri="memory://")
+
+# Cross-origin frontend support is opt-in and must use explicit trusted origins.
+# Example: FRONTEND_ORIGINS=https://your-frontend.example,https://localhost:5173
+
+def _normalise_origin(value):
+    value = value.strip().rstrip("/")
+    parsed = urlparse(value)
+    if (
+        parsed.scheme not in ("http", "https")
+        or not parsed.netloc
+        or parsed.path not in ("", "/")
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError(
+            "FRONTEND_ORIGINS must contain origins only, e.g. https://app.example.com"
+        )
+    return f"{parsed.scheme.lower()}://{parsed.netloc.lower()}"
+
+
+FRONTEND_ORIGINS = tuple(
+    dict.fromkeys(
+        _normalise_origin(origin)
+        for origin in os.getenv("FRONTEND_ORIGINS", "").split(",")
+        if origin.strip()
+    )
+)
+if FRONTEND_ORIGINS:
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": list(FRONTEND_ORIGINS)}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "X-Requested-With"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    )
+
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["600/hour", "90/minute"],
+    storage_uri="memory://",
+)
 risk.MODEL.load()
 DUMMY = generate_password_hash("timing-equaliser")
+
+# Cookie defaults retain the original same-site behavior. For a truly cross-site
+# frontend, set COOKIE_SAMESITE=None in Render and serve the backend over HTTPS.
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "Strict").strip().capitalize()
+if COOKIE_SAMESITE not in ("Strict", "Lax", "None"):
+    COOKIE_SAMESITE = "Strict"
+COOKIE_SECURE = (not DEV) or COOKIE_SAMESITE == "None"
 
 BARRIERS = ["Shared phone", "Long distance", "Unclear instructions", "Cost of travel", "Needs escort / wheelchair",
             "No one to accompany", "Language support needed", "Long waiting time"]
@@ -52,10 +112,16 @@ def body(): return request.get_json(silent=True) or {}
 def ip(): return request.remote_addr or ""
 
 # ============================ security layer ============================
-CSP = ("default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-       "font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self'; "
-       "frame-src https://maps.google.com https://www.google.com; frame-ancestors 'none'; base-uri 'none'; "
-       "form-action 'self'; object-src 'none'; upgrade-insecure-requests")
+_connect_sources = " ".join(("'self'", *FRONTEND_ORIGINS))
+CSP = (
+    "default-src 'self'; script-src 'self'; "
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+    "font-src https://fonts.gstatic.com; img-src 'self' data: https:; "
+    f"connect-src {_connect_sources}; "
+    "frame-src https://maps.google.com https://www.google.com; "
+    "frame-ancestors 'none'; base-uri 'none'; form-action 'self'; "
+    "object-src 'none'; upgrade-insecure-requests"
+)
 
 @app.after_request
 def headers(r):
@@ -76,13 +142,17 @@ def headers(r):
 
 @app.before_request
 def guard():
-    # CSRF: SameSite=Strict cookie + mandatory custom header + same-origin check
+    # CSRF: cookie policy + mandatory custom header + trusted-origin check
     if request.method in ("POST", "PUT", "PATCH", "DELETE"):
         if request.headers.get("X-Requested-With") != "AARAMBH":
             return err("Forbidden", 403)
         o = request.headers.get("Origin")
-        if o and urlparse(o).netloc != request.host:
-            return err("Forbidden", 403)
+        if o:
+            request_origin = f"{request.scheme}://{request.host}".lower()
+            same_origin = o.rstrip("/").lower() == request_origin
+            trusted_frontend = o.rstrip("/").lower() in FRONTEND_ORIGINS
+            if not (same_origin or trusted_frontend):
+                return err("Forbidden", 403)
     g.sess = g.user = None
     if request.path.startswith("/api/"):
         s = get_session(request.cookies.get(COOKIE))
@@ -209,7 +279,7 @@ def send_sms(phone, text):
         log.exception("sms failed")
 
 def issue(resp, token, kind):
-    resp.set_cookie(COOKIE, token, max_age=int(ABSOLUTE[kind].total_seconds()), httponly=True, secure=not DEV, samesite="Strict", path="/")
+    resp.set_cookie(COOKIE, token, max_age=int(ABSOLUTE[kind].total_seconds()), httponly=True, secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE, path="/")
     return resp
 
 @app.post("/api/auth/patient/request-otp")
@@ -283,7 +353,7 @@ def staff_login():
 def logout():
     drop_session(request.cookies.get(COOKIE))
     r = jsonify(ok=True)
-    r.delete_cookie(COOKIE, path="/", secure=not DEV, samesite="Strict")
+    r.delete_cookie(COOKIE, path="/", secure=COOKIE_SECURE, samesite=COOKIE_SAMESITE)
     return r
 
 @app.get("/api/session")
