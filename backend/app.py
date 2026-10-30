@@ -354,6 +354,12 @@ def logout():
 def session_info():
     return jsonify(user=g.user)
 
+@app.get("/healthz")
+def liveness():
+    """Render process liveness check; does not require the DB schema yet."""
+    return jsonify(ok=True, service="AARAMBH API"), 200
+
+
 @app.get("/api/health")
 def health():
     try:

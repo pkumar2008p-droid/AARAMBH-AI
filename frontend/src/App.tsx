@@ -61,6 +61,53 @@ type DashboardData = {
 };
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+const DEMO_PATIENT_PHONE = '9000000001';
+const DEMO_PATIENT_OTP = '123456';
+const DEMO_STAFF_PASSWORD = 'Demo@2026';
+
+const DEMO_STAFF_ACCOUNTS: Record<string, { role: string; name: string; dept: string }> = {
+  ADM001: { role: 'admin', name: 'Demo Administrator', dept: 'Hospital Administration' },
+  DOC101: { role: 'doctor', name: 'Dr. Demo', dept: 'General Medicine' },
+  CLN401: { role: 'clinician', name: 'Demo Clinician', dept: 'Care Coordination' },
+  NUR201: { role: 'nurse', name: 'Demo Nurse', dept: 'Nursing' },
+  WB301: { role: 'ward', name: 'Demo Ward Assistant', dept: 'Patient Support' },
+  PH501: { role: 'pharmacist', name: 'Demo Pharmacist', dept: 'Pharmacy' },
+};
+
+// Synthetic records only. This local presentation mode does not contact a database
+// and must never be used for real patient information or clinical operations.
+const DEMO_DASHBOARD: DashboardData = {
+  patients: [
+    { id: 'demo-p001', name: 'Sample Patient 01', age: 34, lang: 'en' },
+    { id: 'demo-p002', name: 'Sample Patient 02', age: 52, lang: 'hi' },
+    { id: 'demo-p003', name: 'Sample Patient 03', age: 46, lang: 'en' },
+    { id: 'demo-p004', name: 'Sample Patient 04', age: 61, lang: 'pa' },
+  ],
+  followups: [
+    { id: 'DEMO-FU-1001', pid: 'demo-p001', title: 'General Medicine Review', dept: 'General Medicine', due: '2026-11-03', time: '10:30', status: 'pending', confirmed: true, risk: { level: 'high', score: 78 } },
+    { id: 'DEMO-FU-1002', pid: 'demo-p002', title: 'Diabetes Clinic Follow-up', dept: 'Medicine', due: '2026-11-04', time: '11:00', status: 'pending', confirmed: false, risk: { level: 'medium', score: 54 } },
+    { id: 'DEMO-FU-1003', pid: 'demo-p003', title: 'Post-discharge Review', dept: 'General Medicine', due: '2026-10-27', time: '09:45', status: 'completed', confirmed: true, risk: { level: 'low', score: 12 } },
+    { id: 'DEMO-FU-1004', pid: 'demo-p004', title: 'Cardiology Follow-up', dept: 'Cardiology', due: '2026-11-06', time: '12:15', status: 'pending', confirmed: false, risk: { level: 'high', score: 82 } },
+  ],
+  tasks: [
+    { id: 'DEMO-T-01', type: 'Wheelchair assistance', status: 'pending' },
+    { id: 'DEMO-T-02', type: 'Language support', status: 'in progress' },
+  ],
+  rx: [
+    { id: 'DEMO-RX-01', status: 'pending' },
+    { id: 'DEMO-RX-02', status: 'dispensed' },
+  ],
+};
+
+const ROLE_TITLES: Record<string, string> = {
+  admin: 'Hospital administration dashboard',
+  doctor: 'Doctor workspace',
+  clinician: 'Clinical coordination workspace',
+  nurse: 'Nursing workspace',
+  ward: 'Ward assistance workspace',
+  pharmacist: 'Pharmacy workspace',
+};
 
 async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   if (!API_BASE && !import.meta.env.DEV) {
@@ -135,6 +182,7 @@ function App() {
   }, [paused]);
 
   useEffect(() => {
+    if (DEMO_MODE) return;
     let mounted = true;
     async function restoreSession() {
       try {
@@ -160,7 +208,28 @@ function App() {
     setOtpSent(false);
   }
 
+  function activateDemoSession(nextUser: ApiUser) {
+    const data: DashboardData = nextUser.type === 'patient'
+      ? {
+          patients: DEMO_DASHBOARD.patients?.filter((patient) => patient.id === 'demo-p001'),
+          followups: DEMO_DASHBOARD.followups?.filter((item) => item.pid === 'demo-p001'),
+          tasks: [],
+          rx: [],
+        }
+      : DEMO_DASHBOARD;
+    setUser(nextUser);
+    setDashboard(data);
+    setLoggedIn(true);
+    setPortal(null);
+    setNotice('');
+    setQuery('');
+  }
+
   async function completeLogin(nextUser: ApiUser) {
+    if (DEMO_MODE) {
+      activateDemoSession(nextUser);
+      return;
+    }
     const data = await apiRequest<DashboardData>('/api/bootstrap');
     setUser(nextUser);
     setDashboard(data);
@@ -184,6 +253,16 @@ function App() {
     setBusy(true);
     setNotice('');
     try {
+      if (DEMO_MODE) {
+        if (phone !== DEMO_PATIENT_PHONE) {
+          setNotice(`For this presentation demo, use the sample mobile number ${DEMO_PATIENT_PHONE}.`);
+          return;
+        }
+        setMobile(phone);
+        setOtpSent(true);
+        setNotice(`Presentation demo OTP: ${DEMO_PATIENT_OTP}. Synthetic sample account only.`);
+        return;
+      }
       await apiRequest<{ ok: boolean }>('/api/auth/patient/request-otp', {
         method: 'POST',
         body: JSON.stringify({ phone }),
@@ -210,6 +289,13 @@ function App() {
     setBusy(true);
     setNotice('');
     try {
+      if (DEMO_MODE) {
+        if (phone !== DEMO_PATIENT_PHONE || otp !== DEMO_PATIENT_OTP) {
+          throw new Error('Use the sample mobile number and presentation OTP shown on this screen.');
+        }
+        activateDemoSession({ type: 'patient', id: 'demo-p001', name: 'Sample Patient 01', lang: 'en' });
+        return;
+      }
       const result = await apiRequest<{ ok: boolean; user: ApiUser }>('/api/auth/patient/verify', {
         method: 'POST',
         body: JSON.stringify({ phone, otp }),
@@ -233,6 +319,15 @@ function App() {
     setBusy(true);
     setNotice('');
     try {
+      if (DEMO_MODE) {
+        const accountId = staffId.trim().toUpperCase();
+        const account = DEMO_STAFF_ACCOUNTS[accountId];
+        if (!account || account.role !== staffRole || password !== DEMO_STAFF_PASSWORD) {
+          throw new Error('Demo sign-in failed. Check the staff ID, selected role and presentation password shown below.');
+        }
+        activateDemoSession({ type: 'staff', id: accountId, name: account.name, role: account.role, dept: account.dept });
+        return;
+      }
       const result = await apiRequest<{ ok: boolean; user: ApiUser }>('/api/auth/staff/login', {
         method: 'POST',
         body: JSON.stringify({ id: staffId.trim(), pw: password, role: staffRole }),
@@ -247,7 +342,9 @@ function App() {
 
   async function signOut() {
     try {
-      await apiRequest('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+      if (!DEMO_MODE) {
+        await apiRequest('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+      }
     } catch {
       // Clear the local view even if the network is unavailable.
     }
@@ -271,6 +368,11 @@ function App() {
   if (loggedIn) {
     return (
       <div className="demo-dashboard">
+        {DEMO_MODE && (
+          <div className="demo-mode-banner">
+            PRESENTATION DEMO · Synthetic sample records only · No live database or hospital data is connected
+          </div>
+        )}
         <header className="dash-top">
           <Brand />
           <span className="demo-tag">{user?.type === 'patient' ? 'PATIENT PORTAL' : (user?.role ?? 'STAFF').toUpperCase()}</span>
@@ -281,23 +383,23 @@ function App() {
 
         <main className="dash-content">
           <div className="eyebrow">CARE COORDINATION WORKSPACE</div>
-          <h1>{user?.type === 'patient' ? `Welcome, ${user.name}` : 'Care team dashboard'}</h1>
+          <h1>{user?.type === 'patient' ? `Welcome, ${user.name}` : (ROLE_TITLES[user?.role ?? ''] ?? 'Care team dashboard')}</h1>
           <p className="subhead">
-            {user?.type === 'patient' ? 'Your follow-up plans and the next steps shared by your care team.' : `Signed in as ${user?.name ?? 'staff'}${user?.dept ? ` · ${user.dept}` : ''}. Follow-up records are loaded from the secure backend.`}
+            {user?.type === 'patient' ? 'Your sample follow-up plan and next steps.' : DEMO_MODE ? `Signed in as ${user?.name ?? 'staff'}${user?.dept ? ` · ${user.dept}` : ''}. Explore this role-based presentation workspace.` : `Signed in as ${user?.name ?? 'staff'}${user?.dept ? ` · ${user.dept}` : ''}. Follow-up records are loaded from the secure backend.`}
           </p>
 
           <div className="stats">
-            <article><small>Patients in view</small><b>{patients.length}</b><span>Authorised records</span></article>
-            <article><small>Pending follow-ups</small><b>{pendingCount}</b><span>Require coordination</span></article>
-            <article><small>Completed follow-ups</small><b>{completedCount}</b><span>Verified outcomes</span></article>
-            <article><small>High coordination risk</small><b>{highRiskCount}</b><span>Staff review required</span></article>
+            <article className="stat-card"><span>Patients in view</span><strong>{patients.length}</strong><small>{DEMO_MODE ? 'Synthetic sample records' : 'Authorised records'}</small></article>
+            <article className="stat-card"><span>Pending follow-ups</span><strong>{pendingCount}</strong><small>Require coordination</small></article>
+            <article className="stat-card"><span>Completed follow-ups</span><strong>{completedCount}</strong><small>Recorded outcomes</small></article>
+            <article className="stat-card"><span>High coordination risk</span><strong>{highRiskCount}</strong><small>Staff review required</small></article>
           </div>
 
           <section className="case-card">
             <div className="case-head">
               <div>
                 <h2>Follow-up case registry</h2>
-                <p>Records returned for the authenticated account.</p>
+                <p>{DEMO_MODE ? 'Synthetic sample cases for presentation. No real patient data.' : 'Records returned for the authenticated account.'}</p>
               </div>
               <input
                 placeholder="Search cases..."
@@ -340,7 +442,7 @@ function App() {
           </section>
 
           <p className="safety-note">
-            Secure authenticated workspace · Risk flags are administrative coordination signals, not medical diagnoses.
+            {DEMO_MODE ? 'Presentation-only workspace using synthetic records. Not connected to a hospital system and not for clinical decisions.' : 'Secure authenticated workspace · Risk flags are administrative coordination signals, not medical diagnoses.'}
           </p>
         </main>
       </div>
@@ -351,8 +453,8 @@ function App() {
     <div className="site" id="home">
       <div className="announcement">
         <span className="announcement-dot" />
-        Connected, compassionate healthcare follow-up
-        <span className="announcement-pill">HACKATHON DEMO 2026</span>
+        {DEMO_MODE ? 'Presentation preview · Synthetic sample data' : 'Connected, compassionate healthcare follow-up'}
+        <span className="announcement-pill">{DEMO_MODE ? 'DEMO MODE' : 'HACKATHON DEMO 2026'}</span>
       </div>
 
       <header className="site-header">
@@ -598,7 +700,16 @@ function App() {
                   Forgot password?
                 </button>
                 <button className="btn btn-dark auth-submit" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in securely →'}</button>
-                <p className="auth-hint">Staff accounts must be created and authorized by the hospital administrator.</p>
+                {DEMO_MODE ? (
+                  <p className="auth-hint demo-credentials">
+                    <b>Presentation demo password:</b> {DEMO_STAFF_PASSWORD}<br />
+                    Admin: ADM001 · Doctor: DOC101 · Clinician: CLN401<br />
+                    Nurse: NUR201 · Ward: WB301 · Pharmacist: PH501<br />
+                    Select the matching role above. Synthetic demo access only.
+                  </p>
+                ) : (
+                  <p className="auth-hint">Staff accounts must be created and authorized by the hospital administrator.</p>
+                )}
               </form>
             ) : portal === 'register' ? (
               <div>
@@ -625,13 +736,24 @@ function App() {
                 <button type="button" className="text-button centered" onClick={() => openPortal('register')}>
                   New patient? Register here
                 </button>
+                {DEMO_MODE && (
+                  <p className="auth-hint demo-credentials">
+                    <b>Presentation patient:</b> {DEMO_PATIENT_PHONE}<br />
+                    <b>Demo OTP:</b> {DEMO_PATIENT_OTP}<br />
+                    Synthetic sample account only.
+                  </p>
+                )}
               </form>
             )}
 
             {notice && <div className="auth-notice" role="status">{notice}</div>}
 
             <div className="demo-disclosure">
-              <b>Secure access:</b> Sign-in is verified by the AARAMBH backend. Patient OTP delivery requires Twilio configuration; staff accounts must first be created by an administrator.
+              {DEMO_MODE ? (
+                <><b>Presentation mode:</b> This frontend uses hard-coded synthetic demo identities and sample records only. It does not call a backend, database, Supabase or SMS provider. Do not enter real patient information.</>
+              ) : (
+                <><b>Secure access:</b> Sign-in is verified by the AARAMBH backend. Patient OTP delivery requires Twilio configuration; staff accounts must first be created by an administrator.</>
+              )}
             </div>
           </section>
         </div>
