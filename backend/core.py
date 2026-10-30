@@ -5,7 +5,7 @@ Expected environment variables:
     DATA_KEY      Fernet key used to encrypt patient/private fields
     PEPPER        High-entropy server-side HMAC secret
 
-This module intentionally keeps the small ``sb.table(...).execute()`` interface
+This module intentionally keeps the small ``db.table(...).execute()`` interface
 used by the existing app, so the application routes do not need a database API
 rewrite.  The implementation below executes parameterized PostgreSQL queries
 through psycopg 3.
@@ -74,9 +74,9 @@ def _connection():
 # Names passed to SQL are identifiers, never values.  Values always use
 # psycopg placeholders.  Restrict identifiers to ordinary PostgreSQL names.
 _IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-_JSON_COLUMNS = {"features", "docs_ready", "barriers"}
+_JSON_COLUMNS = {"features", "docs_ready", "barriers", "metrics"}
 _DATE_COLUMNS = {"due", "at", "resched_date", "completed_on"}
-_TIME_COLUMNS = {"created_at", "last_seen", "expires_at", "captured_at", "updated_at"}
+_TIME_COLUMNS = {"created_at", "last_seen", "expires_at", "captured_at", "updated_at", "locked_until", "trained_at"}
 
 
 def _ident(value: str) -> str:
@@ -97,7 +97,7 @@ def _adapt_value(column: str, value: Any) -> Any:
 
 
 def _normalise_row(row: dict[str, Any]) -> dict[str, Any]:
-    """Return JSON-friendly values similar to the Supabase client."""
+    """Return JSON-friendly values for Flask responses."""
     out: dict[str, Any] = {}
     for key, value in row.items():
         if isinstance(value, (datetime, date)):
@@ -342,13 +342,33 @@ class PostgresQuery:
 
 
 class PostgresClient:
-    """Small compatibility facade for the existing app's sb.table() calls."""
+    """Small database client exposing table queries used by the application."""
 
     def table(self, name: str) -> PostgresQuery:
         return PostgresQuery(name)
 
 
-sb = PostgresClient()
+db = PostgresClient()
+
+
+def db_ping() -> bool:
+    """Return True only when PostgreSQL is reachable and the app schema exists."""
+    required_tables = {
+        "patients", "staff", "sessions", "audit_logs", "followups", "contacts",
+        "tasks", "rx", "otps", "risk_snapshots", "training_samples", "ml_models",
+    }
+    with _connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 AS ok")
+            if cur.fetchone()["ok"] != 1:
+                return False
+            cur.execute(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = current_schema() AND table_name = ANY(%s)",
+                (list(required_tables),),
+            )
+            found = {row["table_name"] for row in cur.fetchall()}
+            return required_tables.issubset(found)
 
 
 # ---------- time ----------
@@ -442,14 +462,14 @@ def by_ids(table: str, column: str, ids: Iterable[Any]) -> list[dict[str, Any]]:
     for start in range(0, len(identifiers), 80):
         batch = identifiers[start : start + 80]
         output.extend(
-            paged(lambda b=batch: sb.table(table).select("*").in_(column, b))
+            paged(lambda b=batch: db.table(table).select("*").in_(column, b))
         )
     return output
 
 
 def one(table: str, id_: Any) -> dict[str, Any] | None:
     rows = (
-        sb.table(table)
+        db.table(table)
         .select("*")
         .eq("id", id_)
         .limit(1)
@@ -470,8 +490,8 @@ def create_session(kind: str, subject: str, ip: str) -> str:
         raise ValueError("Unsupported session kind")
     token = secrets.token_urlsafe(48)
     current = now_utc()
-    sb.table("sessions").delete().lt("expires_at", iso(current)).execute()
-    sb.table("sessions").insert(
+    db.table("sessions").delete().lt("expires_at", iso(current)).execute()
+    db.table("sessions").insert(
         {
             "token_hash": sha(token),
             "kind": kind,
@@ -489,7 +509,7 @@ def get_session(token: str | None) -> dict[str, Any] | None:
     if not token or len(token) > 120:
         return None
     rows = (
-        sb.table("sessions")
+        db.table("sessions")
         .select("*")
         .eq("token_hash", sha(token))
         .limit(1)
@@ -502,23 +522,23 @@ def get_session(token: str | None) -> dict[str, Any] | None:
     session = rows[0]
     current = now_utc()
     if current > ts(session["expires_at"]) or current - ts(session["last_seen"]) > IDLE:
-        sb.table("sessions").delete().eq("id", session["id"]).execute()
+        db.table("sessions").delete().eq("id", session["id"]).execute()
         return None
 
     if current - ts(session["last_seen"]) > timedelta(seconds=60):
-        sb.table("sessions").update({"last_seen": iso(current)}).eq("id", session["id"]).execute()
+        db.table("sessions").update({"last_seen": iso(current)}).eq("id", session["id"]).execute()
     return session
 
 
 def drop_session(token: str | None) -> None:
     if token:
-        sb.table("sessions").delete().eq("token_hash", sha(token)).execute()
+        db.table("sessions").delete().eq("token_hash", sha(token)).execute()
 
 
 # ---------- audit trail ----------
 def audit(actor: str, role: str, action: str, entity: str = "", entity_id: str = "", ip: str = "") -> None:
     try:
-        sb.table("audit_logs").insert(
+        db.table("audit_logs").insert(
             {
                 "actor": actor,
                 "role": role,

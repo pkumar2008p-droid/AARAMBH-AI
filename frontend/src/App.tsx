@@ -32,38 +32,68 @@ const slides = [
   },
 ];
 
-const demoCases = [
-  {
-    id: 'AR-2048',
-    name: 'Ananya Sharma',
-    age: 42,
-    condition: 'Post-operative follow-up',
-    hospital: 'City Care Hospital',
-    due: 'Today, 11:30 AM',
-    status: 'Needs contact',
-    risk: 'High',
-  },
-  {
-    id: 'AR-2047',
-    name: 'Rohan Mehta',
-    age: 58,
-    condition: 'Cardiac discharge',
-    hospital: 'Northside Medical',
-    due: 'Today, 1:00 PM',
-    status: 'In progress',
-    risk: 'Medium',
-  },
-  {
-    id: 'AR-2046',
-    name: 'Fatima Khan',
-    age: 31,
-    condition: 'Maternity follow-up',
-    hospital: 'City Care Hospital',
-    due: 'Tomorrow, 9:00 AM',
-    status: 'Scheduled',
-    risk: 'Low',
-  },
-];
+type ApiUser = {
+  type: 'patient' | 'staff';
+  id: string;
+  name: string;
+  role?: string;
+  dept?: string;
+  lang?: string;
+};
+
+type PatientRecord = { id: string; name: string; age?: number; lang?: string };
+type FollowUpRecord = {
+  id: string;
+  pid: string;
+  title: string;
+  dept?: string;
+  due: string;
+  time?: string;
+  status: string;
+  confirmed?: boolean;
+  risk?: { level?: string; score?: number };
+};
+type DashboardData = {
+  patients?: PatientRecord[];
+  followups?: FollowUpRecord[];
+  tasks?: unknown[];
+  rx?: unknown[];
+};
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
+
+async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+  if (!API_BASE && !import.meta.env.DEV) {
+    throw new Error('Backend URL is not configured. Set VITE_API_BASE_URL in the frontend deployment.');
+  }
+
+  const method = (options.method ?? 'GET').toUpperCase();
+  const headers = new Headers(options.headers ?? {});
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    headers.set('X-Requested-With', 'AARAMBH');
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    method,
+    headers,
+    credentials: 'include',
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const message = typeof payload.error === 'string' ? payload.error : `Request failed (${response.status})`;
+    throw new Error(message);
+  }
+  return payload as T;
+}
+
+function normalisePhone(value: string): string {
+  const digits = value.replace(/\D/g, '');
+  return digits.length === 12 && digits.startsWith('91') ? digits.slice(2) : digits;
+}
 
 function Brand() {
   return (
@@ -88,7 +118,11 @@ function App() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [mobile, setMobile] = useState('');
   const [staffId, setStaffId] = useState('');
+  const [staffRole, setStaffRole] = useState('doctor');
   const [query, setQuery] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [user, setUser] = useState<ApiUser | null>(null);
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
 
   useEffect(() => {
     if (paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -100,67 +134,170 @@ function App() {
     return () => window.clearInterval(timer);
   }, [paused]);
 
+  useEffect(() => {
+    let mounted = true;
+    async function restoreSession() {
+      try {
+        const session = await apiRequest<{ user: ApiUser | null }>('/api/session');
+        if (!session.user || !mounted) return;
+        const data = await apiRequest<DashboardData>('/api/bootstrap');
+        if (mounted) {
+          setUser(session.user);
+          setDashboard(data);
+          setLoggedIn(true);
+        }
+      } catch {
+        // The landing page remains available when the API is not configured.
+      }
+    }
+    void restoreSession();
+    return () => { mounted = false; };
+  }, []);
+
   function openPortal(value: Portal) {
     setPortal(value);
     setNotice('');
     setOtpSent(false);
   }
 
-  function submitOtp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function completeLogin(nextUser: ApiUser) {
+    const data = await apiRequest<DashboardData>('/api/bootstrap');
+    setUser(nextUser);
+    setDashboard(data);
+    setLoggedIn(true);
+    setPortal(null);
+    setNotice('');
+    setQuery('');
+  }
 
-    if (!/^\+?[0-9\s-]{10,15}$/.test(mobile)) {
-      setNotice('Please enter a valid mobile number.');
+  async function submitOtp(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (portal === 'register') {
+      setNotice('New patient registration must be completed by authorised hospital staff. Please contact the hospital.');
       return;
     }
-
-    setOtpSent(true);
-    setNotice('Demo mode: OTP delivery is not connected. No SMS has been sent.');
+    const phone = normalisePhone(mobile);
+    if (!/^[6-9]\d{9}$/.test(phone)) {
+      setNotice('Enter a valid 10-digit Indian mobile number.');
+      return;
+    }
+    setBusy(true);
+    setNotice('');
+    try {
+      await apiRequest<{ ok: boolean }>('/api/auth/patient/request-otp', {
+        method: 'POST',
+        body: JSON.stringify({ phone }),
+      });
+      setMobile(phone);
+      setOtpSent(true);
+      setNotice('If this number is registered and SMS delivery is configured, an OTP will arrive shortly.');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Could not request an OTP. Please try again.');
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function verifyOtp(event: FormEvent<HTMLFormElement>) {
+  async function verifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice('OTP verification is not connected yet. Patient access remains locked.');
+    const form = new FormData(event.currentTarget);
+    const otp = String(form.get('otp') ?? '').trim();
+    const phone = normalisePhone(mobile);
+    if (!/^\d{6}$/.test(otp)) {
+      setNotice('Enter the 6-digit OTP.');
+      return;
+    }
+    setBusy(true);
+    setNotice('');
+    try {
+      const result = await apiRequest<{ ok: boolean; user: ApiUser }>('/api/auth/patient/verify', {
+        method: 'POST',
+        body: JSON.stringify({ phone, otp }),
+      });
+      await completeLogin(result.user);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'OTP verification failed.');
+    } finally {
+      setBusy(false);
+    }
   }
 
-  function submitStaff(event: FormEvent<HTMLFormElement>) {
+  async function submitStaff(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setNotice('Staff credentials cannot be verified until the secure backend is connected.');
+    const form = new FormData(event.currentTarget);
+    const password = String(form.get('pw') ?? '');
+    if (!staffId.trim() || !password) {
+      setNotice('Enter your staff ID and password.');
+      return;
+    }
+    setBusy(true);
+    setNotice('');
+    try {
+      const result = await apiRequest<{ ok: boolean; user: ApiUser }>('/api/auth/staff/login', {
+        method: 'POST',
+        body: JSON.stringify({ id: staffId.trim(), pw: password, role: staffRole }),
+      });
+      await completeLogin(result.user);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Staff sign-in failed.');
+    } finally {
+      setBusy(false);
+    }
   }
+
+  async function signOut() {
+    try {
+      await apiRequest('/api/auth/logout', { method: 'POST', body: JSON.stringify({}) });
+    } catch {
+      // Clear the local view even if the network is unavailable.
+    }
+    setLoggedIn(false);
+    setUser(null);
+    setDashboard(null);
+    setPortal(null);
+  }
+
+  const followups = dashboard?.followups ?? [];
+  const patients = dashboard?.patients ?? [];
+  const patientById = new Map(patients.map((patient) => [patient.id, patient] as const));
+  const visibleFollowups = followups.filter((item) => {
+    const patientName = patientById.get(item.pid)?.name ?? user?.name ?? '';
+    return `${patientName} ${item.id} ${item.title}`.toLowerCase().includes(query.toLowerCase());
+  });
+  const pendingCount = followups.filter((item) => item.status === 'pending').length;
+  const completedCount = followups.filter((item) => item.status === 'completed').length;
+  const highRiskCount = followups.filter((item) => item.risk?.level === 'high').length;
 
   if (loggedIn) {
     return (
       <div className="demo-dashboard">
         <header className="dash-top">
           <Brand />
-          <span className="demo-tag">SYNTHETIC DEMO</span>
-          <button
-            className="btn btn-light"
-            onClick={() => setLoggedIn(false)}
-          >
+          <span className="demo-tag">{user?.type === 'patient' ? 'PATIENT PORTAL' : (user?.role ?? 'STAFF').toUpperCase()}</span>
+          <button className="btn btn-light" onClick={() => void signOut()}>
             Sign out
           </button>
         </header>
 
         <main className="dash-content">
           <div className="eyebrow">CARE COORDINATION WORKSPACE</div>
-          <h1>Care team dashboard</h1>
+          <h1>{user?.type === 'patient' ? `Welcome, ${user.name}` : 'Care team dashboard'}</h1>
           <p className="subhead">
-            A clearer view of follow-ups and the next steps that matter.
+            {user?.type === 'patient' ? 'Your follow-up plans and the next steps shared by your care team.' : `Signed in as ${user?.name ?? 'staff'}${user?.dept ? ` · ${user.dept}` : ''}. Follow-up records are loaded from the secure backend.`}
           </p>
 
           <div className="stats">
-            <article><small>Active cases</small><b>128</b><span>Demo data</span></article>
-            <article><small>Follow-ups due today</small><b>24</b><span>Illustrative metric</span></article>
-            <article><small>Records to validate</small><b>09</b><span>Review required</span></article>
-            <article><small>Follow-up completion</small><b>86%</b><span>Demo metric</span></article>
+            <article><small>Patients in view</small><b>{patients.length}</b><span>Authorised records</span></article>
+            <article><small>Pending follow-ups</small><b>{pendingCount}</b><span>Require coordination</span></article>
+            <article><small>Completed follow-ups</small><b>{completedCount}</b><span>Verified outcomes</span></article>
+            <article><small>High coordination risk</small><b>{highRiskCount}</b><span>Staff review required</span></article>
           </div>
 
           <section className="case-card">
             <div className="case-head">
               <div>
                 <h2>Follow-up case registry</h2>
-                <p>Fictional patient records for demonstration only.</p>
+                <p>Records returned for the authenticated account.</p>
               </div>
               <input
                 placeholder="Search cases..."
@@ -181,29 +318,29 @@ function App() {
                   </tr>
                 </thead>
                 <tbody>
-                  {demoCases
-                    .filter((item) =>
-                      `${item.name} ${item.id} ${item.condition}`
-                        .toLowerCase()
-                        .includes(query.toLowerCase())
-                    )
-                    .map((item) => (
+                  {visibleFollowups.map((item) => {
+                    const patientName = patientById.get(item.pid)?.name ?? user?.name ?? 'Patient';
+                    const riskLevel = item.risk?.level ?? '—';
+                    return (
                       <tr key={item.id}>
-                        <td><b>{item.name}</b><small>{item.id}</small></td>
-                        <td>{item.condition}</td>
-                        <td>{item.due}</td>
+                        <td><b>{patientName}</b><small>{item.id}</small></td>
+                        <td>{item.title}</td>
+                        <td>{item.due}{item.time ? ` · ${item.time}` : ''}</td>
                         <td><span className="status">{item.status}</span></td>
-                        <td><span className={`risk ${item.risk.toLowerCase()}`}>{item.risk}</span></td>
+                        <td><span className={`risk ${riskLevel.toLowerCase()}`}>{riskLevel}</span></td>
                       </tr>
-                    ))}
+                    );
+                  })}
+                  {visibleFollowups.length === 0 && (
+                    <tr><td colSpan={5}>No follow-up records are available for this account.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
           </section>
 
           <p className="safety-note">
-            Demo workspace · Synthetic data only · Risk flags are coordination
-            signals, not medical diagnoses.
+            Secure authenticated workspace · Risk flags are administrative coordination signals, not medical diagnoses.
           </p>
         </main>
       </div>
@@ -406,7 +543,7 @@ function App() {
       <footer className="footer">
         <Brand />
         <p>© 2026 AARAMBH · AI Synergy Hackathon</p>
-        <small>Demonstration only · Synthetic data · No live hospital integrations configured</small>
+        <small>Follow-up coordination support · Risk flags do not replace clinical judgement</small>
       </footer>
 
       {portal && (
@@ -440,44 +577,36 @@ function App() {
                   <input value={staffId} onChange={(event) => setStaffId(event.target.value)} placeholder="Enter your staff ID" required autoComplete="username" />
                 </label>
                 <label className="field">
+                  Staff role
+                  <select value={staffRole} onChange={(event) => setStaffRole(event.target.value)}>
+                    <option value="doctor">Doctor</option>
+                    <option value="clinician">Clinician</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="ward">Ward / Patient assistant</option>
+                    <option value="pharmacist">Pharmacist</option>
+                    <option value="admin">Administrator</option>
+                  </select>
+                </label>
+                <label className="field">
                   Password
                   <div className="password-wrap">
-                    <input type={showPassword ? 'text' : 'password'} placeholder="Enter password" required autoComplete="current-password" />
+                    <input name="pw" type={showPassword ? 'text' : 'password'} placeholder="Enter password" required autoComplete="current-password" />
                     <button type="button" onClick={() => setShowPassword((value) => !value)}>{showPassword ? 'Hide' : 'Show'}</button>
                   </div>
                 </label>
                 <button type="button" className="text-button" onClick={() => setNotice('Account recovery will be available after secure authentication is configured.')}>
                   Forgot password?
                 </button>
-                <button className="btn btn-dark auth-submit" type="submit">Sign in securely →</button>
+                <button className="btn btn-dark auth-submit" type="submit" disabled={busy}>{busy ? 'Signing in…' : 'Sign in securely →'}</button>
                 <p className="auth-hint">Staff accounts must be created and authorized by the hospital administrator.</p>
               </form>
             ) : portal === 'register' ? (
-              <form onSubmit={submitOtp}>
-                <label className="field">
-                  Full name
-                  <input placeholder="Enter your full name" required />
-                </label>
-                <label className="field">
-                  Mobile number
-                  <input value={mobile} onChange={(event) => setMobile(event.target.value)} placeholder="+91 98765 43210" required inputMode="tel" autoComplete="tel" />
-                </label>
-                <label className="field">
-                  Preferred language
-                  <select value={lang} onChange={(event) => setLang(event.target.value)}>
-                    <option>English</option>
-                    <option>हिंदी</option>
-                  </select>
-                </label>
-                <label className="consent">
-                  <input type="checkbox" required />
-                  I agree to the privacy notice for follow-up coordination.
-                </label>
-                <button className="btn btn-primary auth-submit" type="submit">Verify mobile number →</button>
-                <button type="button" className="text-button centered" onClick={() => openPortal('patient')}>
-                  Already registered? Sign in
+              <div>
+                <p className="auth-hint">Self-registration is not enabled in this release. Patient records must be created and verified by authorised hospital staff.</p>
+                <button type="button" className="btn btn-primary auth-submit" onClick={() => openPortal('patient')}>
+                  Return to patient sign in
                 </button>
-              </form>
+              </div>
             ) : (
               <form onSubmit={otpSent ? verifyOtp : submitOtp}>
                 <label className="field">
@@ -487,11 +616,11 @@ function App() {
                 {otpSent && (
                   <label className="field">
                     One-time password (OTP)
-                    <input placeholder="Enter OTP" inputMode="numeric" autoComplete="one-time-code" minLength={4} maxLength={8} required />
+                    <input name="otp" placeholder="Enter 6-digit OTP" inputMode="numeric" autoComplete="one-time-code" minLength={6} maxLength={6} pattern="[0-9]{6}" required />
                   </label>
                 )}
-                <button className="btn btn-primary auth-submit" type="submit">
-                  {otpSent ? 'Verify OTP' : 'Send OTP'} →
+                <button className="btn btn-primary auth-submit" type="submit" disabled={busy}>
+                  {busy ? 'Please wait…' : otpSent ? 'Verify OTP →' : 'Send OTP →'}
                 </button>
                 <button type="button" className="text-button centered" onClick={() => openPortal('register')}>
                   New patient? Register here
@@ -502,7 +631,7 @@ function App() {
             {notice && <div className="auth-notice" role="status">{notice}</div>}
 
             <div className="demo-disclosure">
-              <b>Demo mode:</b> Real SMS/OTP verification and staff authentication are not connected. No real patient access is enabled.
+              <b>Secure access:</b> Sign-in is verified by the AARAMBH backend. Patient OTP delivery requires Twilio configuration; staff accounts must first be created by an administrator.
             </div>
           </section>
         </div>

@@ -2,7 +2,7 @@
 import os, io, math, re, hashlib
 from datetime import date
 import pandas as pd
-from core import sb, today, log, ts
+from .core import db, today, log, ts
 
 H_LAT = float(os.getenv("HOSPITAL_LAT", "30.9097"))
 H_LNG = float(os.getenv("HOSPITAL_LNG", "75.8527"))
@@ -105,13 +105,15 @@ class _Model:
     def load(self):
         import joblib
         try:
-            r = sb.table("ml_models").select("*").eq("active", True).order("trained_at", desc=True).limit(1).execute().data
+            r = db.table("ml_models").select("*").eq("active", True).order("trained_at", desc=True).limit(1).execute().data
             if r:
-                raw = sb.storage.from_("models").download(r[0]["storage_path"])
+                raw = r[0]["model_data"]
+                if not isinstance(raw, (bytes, bytearray)):
+                    raise ValueError("stored model is missing its binary payload")
                 if hashlib.sha256(raw).hexdigest() != r[0]["sha256"]:
                     raise ValueError("model integrity check failed")
                 self.b = joblib.load(io.BytesIO(raw))
-                self.meta = {"name": r[0]["name"], "source": "Supabase (self-trained)", "trained_at": r[0]["trained_at"], "n": r[0]["n_samples"]}
+                self.meta = {"name": r[0]["name"], "source": "PostgreSQL (self-trained)", "trained_at": r[0]["trained_at"], "n": r[0]["n_samples"]}
                 return
         except Exception:
             log.exception("remote model not loaded")

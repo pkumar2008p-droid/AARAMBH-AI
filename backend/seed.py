@@ -1,9 +1,9 @@
-"""One-time setup:  python seed.py            -> creates staff accounts with RANDOM passwords (printed once)
-                   python seed.py --demo     -> also loads demo patients / follow-ups (hackathon demo)"""
+"""One-time setup:  python -m backend.seed            -> creates staff accounts with RANDOM passwords (printed once)
+                   python -m backend.seed --demo     -> also loads demo patients / follow-ups (hackathon demo)"""
 import sys, secrets, string
 from datetime import timedelta
 from werkzeug.security import generate_password_hash
-from core import sb, enc, hmac_hex, iso, now_utc, today
+from .core import db, enc, hmac_hex, iso, now_utc, today
 
 STAFF = [("DOC101", "doctor", "Dr. Harpreet Singh", "Medicine OPD"), ("DOC103", "doctor", "Dr. Rajiv Mehta", "Surgery OPD"),
          ("DOC104", "doctor", "Dr. Anil Verma", "Cardiology OPD"), ("NUR201", "nurse", "Nurse Simran Kaur", "OPD Ward"),
@@ -20,13 +20,13 @@ def day(n): return iso(today() + timedelta(days=n))
 
 
 def seed_staff():
-    have = {r["staff_code"] for r in sb.table("staff").select("staff_code").execute().data}
+    have = {r["staff_code"] for r in db.table("staff").select("staff_code").execute().data}
     print("\n=== STAFF LOGINS (shown ONCE - save them now) ===")
     for code, role, name, dept in STAFF:
         if code in have:
             continue
         pw = new_pw()
-        sb.table("staff").insert({"staff_code": code, "role": role, "name": name, "dept": dept, "pw_hash": generate_password_hash(pw)}).execute()
+        db.table("staff").insert({"staff_code": code, "role": role, "name": name, "dept": dept, "pw_hash": generate_password_hash(pw)}).execute()
         print(f"{role:11} {code:7} {pw}   ({name})")
 
 
@@ -51,27 +51,27 @@ TASKS = [(3, 4, "Wheelchair + escort", "OPD Registration", "Cardiology OPD, Room
 
 
 def seed_demo():
-    if sb.table("patients").select("id").eq("is_demo", True).limit(1).execute().data:
+    if db.table("patients").select("id").eq("is_demo", True).limit(1).execute().data:
         print("Demo data already present."); return
     pids = []
     for n, ph, age, area, la, ln, lang, sh, ms in PAT:
-        r = sb.table("patients").insert({"phone_hash": hmac_hex(ph), "pii": enc({"name": n, "phone": ph, "alt": "", "area": area, "lat": la, "lng": ln}),
+        r = db.table("patients").insert({"phone_hash": hmac_hex(ph), "pii": enc({"name": n, "phone": ph, "alt": "", "area": area, "lat": la, "lng": ln}),
                                          "age": age, "lang": lang, "shared_phone": sh, "missed_before": ms, "is_demo": True}).execute().data[0]
         pids.append(r["id"])
     fids = []
     for pi, title, dept, doc, off, tm, ins, docs, bars, cons, st in FU:
-        r = sb.table("followups").insert({"patient_id": pids[pi], "title": title, "dept": dept, "doctor": doc, "due": day(off), "time": tm,
+        r = db.table("followups").insert({"patient_id": pids[pi], "title": title, "dept": dept, "doctor": doc, "due": day(off), "time": tm,
                                           "secret": enc({"ins": ins, "docs": docs, "note": ""}), "barriers": bars, "status": st,
                                           "outcome": "Attended at this hospital" if st == "completed" else None,
                                           "completed_on": day(off) if st == "completed" else None, "confirmed": st == "completed",
                                           "created_at": iso(now_utc() - timedelta(days=max(5, -off + 3)))}).execute().data[0]
         fids.append(r["id"])
         for d, by, mode, res, note in cons:
-            sb.table("contacts").insert({"followup_id": r["id"], "at": day(d), "by_name": by, "mode": mode, "result": res, "note_enc": enc({"n": note}) if note else None}).execute()
+            db.table("contacts").insert({"followup_id": r["id"], "at": day(d), "by_name": by, "mode": mode, "result": res, "note_enc": enc({"n": note}) if note else None}).execute()
     for fi, items in RX:
-        sb.table("rx").insert({"followup_id": fids[fi], "patient_id": pids[FU[fi][0]], "items_enc": enc({"i": items})}).execute()
+        db.table("rx").insert({"followup_id": fids[fi], "patient_id": pids[FU[fi][0]], "items_enc": enc({"i": items})}).execute()
     for pi, fi, typ, fr, to, when in TASKS:
-        sb.table("tasks").insert({"patient_id": pids[pi], "followup_id": fids[fi], "type": typ, "from_loc": fr, "to_loc": to, "when_txt": when, "source": "Care plan"}).execute()
+        db.table("tasks").insert({"patient_id": pids[pi], "followup_id": fids[fi], "type": typ, "from_loc": fr, "to_loc": to, "when_txt": when, "source": "Care plan"}).execute()
     print("Demo patients loaded. Demo patient phones: 9000000001 ... 9000000006 (OTP = your DEMO_OTP value)")
 
 

@@ -11,8 +11,8 @@ from sklearn.model_selection import train_test_split, cross_val_predict, Stratif
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
-from core import sb, now_utc, iso, paged, log
-import risk
+from .core import db, now_utc, iso, paged, log
+from . import risk
 
 FEATURES, TARGET, SEED = risk.FEATURES, "target_delayed_followup", 42
 STATE = {"running": False, "last": None}
@@ -34,7 +34,7 @@ def collect():
     base = os.path.join(ROOT, "data", "base_training.csv")          # your original 6000-row CSV (optional but recommended)
     if os.path.exists(base):
         frames.append(pd.read_csv(base)[FEATURES + [TARGET]])
-    rows = paged(lambda: sb.table("training_samples").select("features,label"))
+    rows = paged(lambda: db.table("training_samples").select("features,label"))
     real = len(rows)
     if rows:
         frames.append(pd.DataFrame([{**r["features"], TARGET: r["label"]} for r in rows])[FEATURES + [TARGET]])
@@ -44,8 +44,8 @@ def collect():
 def run():
     risk.MODEL.load()
     df, real = collect()
-    if len(df) < 200 or df[TARGET].nunique() < 2:
-        return {"ok": False, "message": f"Not enough data yet ({len(df)} rows, {real} real outcomes). Add data/base_training.csv or close more follow-ups."}
+    if len(df) < 200 or df[TARGET].nunique() < 2 or int(df[TARGET].value_counts().min()) < 4:
+        return {"ok": False, "message": f"Not enough balanced data yet ({len(df)} rows, {real} real outcomes). Need at least 4 examples in each outcome class."}
     X, y = df[FEATURES], df[TARGET].astype(int)
     Xtr, Xte, ytr, yte = train_test_split(X, y, test_size=0.25, stratify=y, random_state=SEED)
     champ = risk.MODEL.b
@@ -70,10 +70,8 @@ def run():
     bundle = {"model": est, "threshold": th, "model_name": "Self-trained XGBoost", "feature_columns": FEATURES,
               "target_column": TARGET, "trained_at": iso(now_utc())}
     buf = io.BytesIO(); joblib.dump(bundle, buf); raw = buf.getvalue()
-    path = f"model_{now_utc().strftime('%Y%m%d_%H%M%S')}.joblib"
-    sb.storage.from_("models").upload(path, raw, {"content-type": "application/octet-stream", "upsert": "true"})
-    sb.table("ml_models").update({"active": False}).eq("active", True).execute()
-    sb.table("ml_models").insert({"name": bundle["model_name"], "storage_path": path, "sha256": hashlib.sha256(raw).hexdigest(),
+    db.table("ml_models").update({"active": False}).eq("active", True).execute()
+    db.table("ml_models").insert({"name": bundle["model_name"], "model_data": raw, "sha256": hashlib.sha256(raw).hexdigest(),
                                   "threshold": th, "n_samples": len(df), "active": True,
                                   "metrics": {"f1": f1_new, "roc_auc": auc, "real_outcomes": real}}).execute()
     risk.MODEL.load()
@@ -99,7 +97,7 @@ def start():
 
 
 def status():
-    n = sb.table("training_samples").select("id", count="exact").limit(1).execute().count or 0
+    n = db.table("training_samples").select("id", count="exact").limit(1).execute().count or 0
     return {"model": risk.MODEL.meta, "samples": n, "running": STATE["running"], "last": STATE["last"]}
 
 

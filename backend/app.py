@@ -1,4 +1,4 @@
-"""AARAMBH Follow-up Navigator — Flask + Supabase backend.
+"""AARAMBH Follow-up Navigator — Flask + PostgreSQL backend.
 
 Render start command (from the repository root):
     gunicorn backend.app:app
@@ -15,7 +15,7 @@ from urllib.parse import urlparse
 
 import requests as http
 from dotenv import load_dotenv
-from flask import Flask, g, jsonify, request, send_from_directory
+from flask import Flask, g, jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -26,10 +26,6 @@ from werkzeug.security import check_password_hash, generate_password_hash
 # Resolve paths from this file, not from Render's current working directory.
 BACKEND_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BACKEND_DIR.parent
-STATIC_DIR = PROJECT_ROOT / "static"
-if not STATIC_DIR.is_dir():
-    # Also support projects that keep the frontend inside backend/static.
-    STATIC_DIR = BACKEND_DIR / "static"
 
 # Load a local .env for development. Render environment variables take precedence.
 load_dotenv(PROJECT_ROOT / ".env", override=False)
@@ -40,11 +36,7 @@ from .core import *  # noqa: F401,F403,E402
 from . import risk  # noqa: E402
 from . import train as trainer  # noqa: E402
 
-app = Flask(
-    __name__,
-    static_folder=str(STATIC_DIR),
-    static_url_path="/static",
-)
+app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 app.config.update(MAX_CONTENT_LENGTH=64 * 1024, JSON_SORT_KEYS=False)
 
@@ -227,7 +219,7 @@ def bootstrap():
     u, role = g.user, g.user["role"]
     if u["type"] == "patient":
         P = P_of(one("patients", u["id"]))
-        frs = paged(lambda: sb.table("followups").select("*").eq("patient_id", u["id"]))
+        frs = paged(lambda: db.table("followups").select("*").eq("patient_id", u["id"]))
         cons = all_contacts(frs)
         fus = []
         for r in frs:
@@ -240,8 +232,8 @@ def bootstrap():
     audit(u["name"], role, "view_data", ip=ip())
     out = {"rx": [], "tasks": []}
     if role in ("ward", "pharmacist"):
-        tasks = paged(lambda: sb.table("tasks").select("*")) if role == "ward" else []
-        rxs = paged(lambda: sb.table("rx").select("*")) if role == "pharmacist" else []
+        tasks = paged(lambda: db.table("tasks").select("*")) if role == "ward" else []
+        rxs = paged(lambda: db.table("rx").select("*")) if role == "pharmacist" else []
         fids = {t["followup_id"] for t in tasks if t["followup_id"]} | {x["followup_id"] for x in rxs}
         frs = by_ids("followups", "id", fids) if fids else []
         pids = {t["patient_id"] for t in tasks} | {x["patient_id"] for x in rxs}
@@ -252,17 +244,17 @@ def bootstrap():
         out["patients"] = [minimal_p(p) for p in pmap.values()]
         out["followups"] = fus
         return jsonify(out)
-    frs = paged(lambda: sb.table("followups").select("*").eq("doctor", u["name"])) if role == "doctor" else paged(lambda: sb.table("followups").select("*"))
+    frs = paged(lambda: db.table("followups").select("*").eq("doctor", u["name"])) if role == "doctor" else paged(lambda: db.table("followups").select("*"))
     cons = all_contacts(frs)
-    pmap = {r["id"]: P_of(r) for r in paged(lambda: sb.table("patients").select("*"))}
+    pmap = {r["id"]: P_of(r) for r in paged(lambda: db.table("patients").select("*"))}
     fus = [F_of(r, cons.get(r["id"], [])) for r in frs if r["patient_id"] in pmap]
     risk.attach(fus, pmap)
     for p in pmap.values():
         p["distKm"] = risk.road_km(p["lat"], p["lng"]); p.pop("lat"); p.pop("lng")
     out.update(patients=list(pmap.values()), followups=fus)
     if role == "admin":
-        out["tasks"] = [{"id": t["id"], "status": t["status"], "type": t["type"], "pid": t["patient_id"]} for t in paged(lambda: sb.table("tasks").select("*"))]
-        out["rx"] = [{"id": x["id"], "status": x["status"], "fid": x["followup_id"], "pid": x["patient_id"], "items": []} for x in paged(lambda: sb.table("rx").select("*"))]
+        out["tasks"] = [{"id": t["id"], "status": t["status"], "type": t["type"], "pid": t["patient_id"]} for t in paged(lambda: db.table("tasks").select("*"))]
+        out["rx"] = [{"id": x["id"], "status": x["status"], "fid": x["followup_id"], "pid": x["patient_id"], "items": []} for x in paged(lambda: db.table("rx").select("*"))]
         out["ml"] = trainer.status()
     return jsonify(out)
 
@@ -270,11 +262,12 @@ def bootstrap():
 def send_sms(phone, text):
     sid, tok, frm = os.getenv("TWILIO_SID"), os.getenv("TWILIO_TOKEN"), os.getenv("TWILIO_FROM")
     if not (sid and tok and frm):
-        log.warning("SMS not configured - OTP for ******%s: %s", phone[-4:], text[:6])   # testing only
+        log.warning("SMS not configured; OTP delivery is unavailable.")
         return
     try:
-        http.post(f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json", auth=(sid, tok),
-                  data={"To": "+91" + phone, "From": frm, "Body": text}, timeout=10)
+        response = http.post(f"https://api.twilio.com/2010-04-01/Accounts/{sid}/Messages.json", auth=(sid, tok),
+                             data={"To": "+91" + phone, "From": frm, "Body": text}, timeout=10)
+        response.raise_for_status()
     except Exception:
         log.exception("sms failed")
 
@@ -287,14 +280,15 @@ def issue(resp, token, kind):
 def request_otp():
     ph = phone_ok(body().get("phone"))
     if ph:
-        r = sb.table("patients").select("id,is_demo").eq("phone_hash", hmac_hex(ph)).limit(1).execute().data
+        r = db.table("patients").select("id,is_demo").eq("phone_hash", hmac_hex(ph)).limit(1).execute().data
         if r:
             pid, n = r[0]["id"], now_utc()
-            recent = sb.table("otps").select("id", count="exact").eq("patient_id", pid).gte("created_at", iso(n - timedelta(minutes=15))).execute().count or 0
+            recent = db.table("otps").select("id", count="exact").eq("patient_id", pid).gte("created_at", iso(n - timedelta(minutes=15))).execute().count or 0
             if recent < 3:
-                demo = os.getenv("DEMO_OTP") if r[0]["is_demo"] else None
+                allow_demo_otp = DEV or os.getenv("ALLOW_DEMO_OTP", "false").strip().lower() == "true"
+                demo = os.getenv("DEMO_OTP") if r[0]["is_demo"] and allow_demo_otp else None
                 code = demo or f"{secrets.randbelow(10**6):06d}"
-                sb.table("otps").insert({"patient_id": pid, "code_hash": hmac_hex(pid + code), "expires_at": iso(n + timedelta(minutes=5))}).execute()
+                db.table("otps").insert({"patient_id": pid, "code_hash": hmac_hex(pid + code), "expires_at": iso(n + timedelta(minutes=5))}).execute()
                 if not demo:
                     send_sms(ph, f"{code} is your AARAMBH login OTP. Valid 5 minutes. Do not share it.")
     return jsonify(ok=True)                                  # same answer whether or not the number exists
@@ -307,19 +301,19 @@ def verify_otp():
     bad = err("Invalid or expired OTP", 401)
     if not ph or not re.fullmatch(r"\d{6}", otp):
         return bad
-    r = sb.table("patients").select("*").eq("phone_hash", hmac_hex(ph)).limit(1).execute().data
+    r = db.table("patients").select("*").eq("phone_hash", hmac_hex(ph)).limit(1).execute().data
     if not r:
         return bad
     pid = r[0]["id"]
-    rows = sb.table("otps").select("*").eq("patient_id", pid).eq("used", False).gt("expires_at", iso(now_utc())).order("created_at", desc=True).limit(1).execute().data
+    rows = db.table("otps").select("*").eq("patient_id", pid).eq("used", False).gt("expires_at", iso(now_utc())).order("created_at", desc=True).limit(1).execute().data
     if not rows or rows[0]["attempts"] >= 5:
         return bad
     o = rows[0]
     if not hmac.compare_digest(o["code_hash"], hmac_hex(pid + otp)):
-        sb.table("otps").update({"attempts": o["attempts"] + 1}).eq("id", o["id"]).execute()
+        db.table("otps").update({"attempts": o["attempts"] + 1}).eq("id", o["id"]).execute()
         audit("patient", "patient", "otp_failed", "patient", pid, ip())
         return bad
-    sb.table("otps").update({"used": True}).eq("id", o["id"]).execute()
+    db.table("otps").update({"used": True}).eq("id", o["id"]).execute()
     token = create_session("patient", pid, ip())
     audit("patient", "patient", "login", "patient", pid, ip())
     user = {"type": "patient", "id": pid, "name": dec(r[0]["pii"]).get("name", ""), "lang": r[0]["lang"]}
@@ -331,7 +325,7 @@ def staff_login():
     d = body()
     code, pw, role = clean(d.get("id"), 20).upper(), str(d.get("pw") or "")[:128], clean(d.get("role"), 20)
     bad = err("Incorrect ID or password", 401)
-    r = sb.table("staff").select("*").eq("staff_code", code).limit(1).execute().data
+    r = db.table("staff").select("*").eq("staff_code", code).limit(1).execute().data
     s = r[0] if r else None
     if not s or not s["active"] or s["role"] != role:
         check_password_hash(DUMMY, pw)                       # same timing for unknown accounts
@@ -341,10 +335,10 @@ def staff_login():
         return err("Too many attempts. Try again in 15 minutes.", 429)
     if not check_password_hash(s["pw_hash"], pw):
         n = s["failed_count"] + 1
-        sb.table("staff").update({"failed_count": 0 if n >= 5 else n, "locked_until": iso(now_utc() + timedelta(minutes=15)) if n >= 5 else None}).eq("id", s["id"]).execute()
+        db.table("staff").update({"failed_count": 0 if n >= 5 else n, "locked_until": iso(now_utc() + timedelta(minutes=15)) if n >= 5 else None}).eq("id", s["id"]).execute()
         audit(code, role, "login_failed", ip=ip())
         return bad
-    sb.table("staff").update({"failed_count": 0, "locked_until": None}).eq("id", s["id"]).execute()
+    db.table("staff").update({"failed_count": 0, "locked_until": None}).eq("id", s["id"]).execute()
     token = create_session("staff", s["id"], ip())
     audit(s["name"], role, "login", ip=ip())
     return issue(jsonify(ok=True, user={"type": "staff", "id": s["id"], "name": s["name"], "role": role, "dept": s["dept"]}), token, "staff")
@@ -361,17 +355,24 @@ def session_info():
     return jsonify(user=g.user)
 
 @app.get("/api/health")
-def health(): return jsonify(ok=True)
+def health():
+    try:
+        if not db_ping():
+            return jsonify(ok=False, database="schema_incomplete"), 503
+        return jsonify(ok=True, database="connected"), 200
+    except Exception:
+        log.exception("database health check failed")
+        return jsonify(ok=False, database="unavailable"), 503
 
 # ============================ shared mutation helpers ============================
 def add_contact(fid, by, mode, result, note=""):
-    sb.table("contacts").insert({"followup_id": fid, "at": iso(today()), "by_name": by, "mode": mode, "result": result, "note_enc": enc({"n": clean(note, 300)}) if note else None}).execute()
+    db.table("contacts").insert({"followup_id": fid, "at": iso(today()), "by_name": by, "mode": mode, "result": result, "note_enc": enc({"n": clean(note, 300)}) if note else None}).execute()
 
-def upd(fid, **k): sb.table("followups").update(k).eq("id", fid).execute()
+def upd(fid, **k): db.table("followups").update(k).eq("id", fid).execute()
 
 def build_one(row):
     pr = one("patients", row["patient_id"])
-    return F_of(row, sb.table("contacts").select("*").eq("followup_id", row["id"]).order("created_at").execute().data), P_of(pr)
+    return F_of(row, db.table("contacts").select("*").eq("followup_id", row["id"]).order("created_at").execute().data), P_of(pr)
 
 def snapshot(fid):
     """Remember the features as they looked BEFORE the due date; they become the training sample once the outcome is known."""
@@ -380,13 +381,13 @@ def snapshot(fid):
         if row and row["status"] == "pending":
             F, P = build_one(row)
             if risk.days_to(F["due"]) >= 0:
-                sb.table("risk_snapshots").upsert({"followup_id": fid, "features": risk.features(F, P), "captured_at": iso(now_utc())}).execute()
+                db.table("risk_snapshots").upsert({"followup_id": fid, "features": risk.features(F, P), "captured_at": iso(now_utc())}).execute()
     except Exception:
         log.exception("snapshot failed")
 
 # ============================ patient actions ============================
 def own(fid):
-    r = sb.table("followups").select("*").eq("id", fid).eq("patient_id", g.user["id"]).limit(1).execute().data
+    r = db.table("followups").select("*").eq("id", fid).eq("patient_id", g.user["id"]).limit(1).execute().data
     return r[0] if r else None
 
 def patient_action(fn):
@@ -434,7 +435,7 @@ def p_assist(row):
         return err("Select at least one option")
     bars = list(row["barriers"] or [])
     if "wheel" in a:
-        sb.table("tasks").insert({"patient_id": row["patient_id"], "followup_id": row["id"], "type": "Wheelchair + escort", "from_loc": "OPD Registration",
+        db.table("tasks").insert({"patient_id": row["patient_id"], "followup_id": row["id"], "type": "Wheelchair + escort", "from_loc": "OPD Registration",
                                   "to_loc": row["dept"], "when_txt": "On arrival, " + row["due"], "source": "Patient request"}).execute()
         bars.append("Needs escort / wheelchair")
     if "lang" in a:
@@ -477,7 +478,7 @@ def p_profile():
     lang = d.get("lang") if d.get("lang") in ("en", "hi", "pa") else "en"
     r = one("patients", g.user["id"])
     pii = dec(r["pii"]); pii["alt"] = alt
-    sb.table("patients").update({"pii": enc(pii), "lang": lang}).eq("id", r["id"]).execute()
+    db.table("patients").update({"pii": enc(pii), "lang": lang}).eq("id", r["id"]).execute()
     return jsonify(ok=True)
 
 # ============================ staff actions ============================
@@ -562,9 +563,9 @@ def s_outcome(fid):
         text = "Attended at this hospital" if o == "attended" else "Received care elsewhere (verified)"
         upd(row["id"], status="completed", outcome=text, completed_on=iso(today()))
         add_contact(row["id"], by, "Review", "Outcome recorded: " + text)
-        snap = sb.table("risk_snapshots").select("features").eq("followup_id", row["id"]).limit(1).execute().data
+        snap = db.table("risk_snapshots").select("features").eq("followup_id", row["id"]).limit(1).execute().data
         if snap:                                              # LEARN: label = visit happened after the due date
-            sb.table("training_samples").upsert({"followup_id": row["id"], "features": snap[0]["features"], "label": int(today() > date_ok(row["due"]))}, on_conflict="followup_id").execute()
+            db.table("training_samples").upsert({"followup_id": row["id"], "features": snap[0]["features"], "label": int(today() > date_ok(row["due"]))}, on_conflict="followup_id").execute()
     audit(by, g.user["role"], "outcome_" + o, "followup", row["id"], ip())
     return jsonify(ok=True)
 
@@ -580,10 +581,10 @@ def s_create():
         return err("Please fill all fields correctly")
     docs = [clean(x, 80) for x in str(d.get("docs") or "").split(",") if clean(x, 80)][:15]
     meds = [clean(x, 120) for x in str(d.get("meds") or "").split("\n") if clean(x, 120)][:20]
-    r = sb.table("followups").insert({"patient_id": pr["id"], "title": title, "dept": dept, "doctor": doctor, "due": iso(due), "time": tm,
+    r = db.table("followups").insert({"patient_id": pr["id"], "title": title, "dept": dept, "doctor": doctor, "due": iso(due), "time": tm,
                                       "secret": enc({"ins": ins, "docs": docs, "note": ""})}).execute().data[0]
     if meds:
-        sb.table("rx").insert({"followup_id": r["id"], "patient_id": pr["id"], "items_enc": enc({"i": meds})}).execute()
+        db.table("rx").insert({"followup_id": r["id"], "patient_id": pr["id"], "items_enc": enc({"i": meds})}).execute()
     audit(g.user["name"], g.user["role"], "create_plan", "followup", r["id"], ip())
     snapshot(r["id"])
     return jsonify(ok=True, id=r["id"])
@@ -591,14 +592,14 @@ def s_create():
 @app.post("/api/staff/tasks/<tid>/done")
 @need_login("staff", ("ward",))
 def s_task(tid):
-    sb.table("tasks").update({"status": "done"}).eq("id", clean(tid, 40)).execute()
+    db.table("tasks").update({"status": "done"}).eq("id", clean(tid, 40)).execute()
     audit(g.user["name"], "ward", "task_done", "task", tid, ip())
     return jsonify(ok=True)
 
 @app.post("/api/staff/rx/<rid>/dispense")
 @need_login("staff", ("pharmacist",))
 def s_rx(rid):
-    sb.table("rx").update({"status": "dispensed"}).eq("id", clean(rid, 40)).execute()
+    db.table("rx").update({"status": "dispensed"}).eq("id", clean(rid, 40)).execute()
     audit(g.user["name"], "pharmacist", "dispense", "rx", rid, ip())
     return jsonify(ok=True)
 
@@ -641,7 +642,8 @@ def chat():
 # ============================ frontend ============================
 @app.get("/")
 def index():
-    return send_from_directory(app.static_folder, "index.html")
+    # The React frontend is deployed as a separate Render Static Site.
+    return jsonify(service="AARAMBH API", ok=True, health="/api/health")
 
 if __name__ == "__main__":
     app.run(port=int(os.getenv("PORT", 5000)))
