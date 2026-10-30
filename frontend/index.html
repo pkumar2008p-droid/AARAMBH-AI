@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AARAMBH Follow-up Navigator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{font-family:'DM Sans',sans-serif;color:#193b42;background:#f5f8fa;-webkit-font-smoothing:antialiased;--teal:#168c88;--dark:#123b46;--muted:#6d8187;--border:#e3ebed;--shadow:0 18px 50px rgba(25,72,79,.09)}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;min-width:320px;min-height:100vh;background:#f5f8fa}
+body,button,input,select,textarea{font-family:'DM Sans',sans-serif}
+button{cursor:pointer}
+a{color:inherit;text-decoration:none}
+[hidden]{display:none!important}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #168c8855;outline-offset:3px}
+.site{width:100%;overflow-x:clip}
+h1,h2,h3{font-family:Manrope,sans-serif;color:var(--dark)}
+.announcement{min-height:38px;display:flex;align-items:center;justify-content:center;gap:9px;padding:8px 18px;background:#e6f5f2;color:#245f60;text-align:center;font-size:12px;font-weight:600}
+.announcement-pill{background:#fff;color:var(--teal);border:1px solid #d0eae5;border-radius:30px;padding:3px 9px;font-size:10px;font-weight:800}
+.site-header{min-height:78px;padding:14px 5%;display:flex;align-items:center;justify-content:space-between;gap:18px;background:#fffffff2;border-bottom:1px solid #eaf0f1;position:sticky;top:0;z-index:20;backdrop-filter:blur(15px)}
+.brand{display:inline-flex;align-items:center;gap:11px;flex-shrink:0}
+.brand-mark{width:43px;height:43px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#168c88,#0e6769);color:#fff;font-size:21px;font-weight:800;box-shadow:0 6px 15px #168c8838}
+.brand strong{display:block;font-family:Manrope,sans-serif;font-size:20px;font-weight:800;letter-spacing:1.4px;color:var(--dark)}
+.brand small{display:block;margin-top:1px;color:#829297;font-size:10px}
+.desktop-nav{display:flex;align-items:center;gap:22px}
+.desktop-nav a{color:#60767c;font-size:13px;font-weight:600;padding:6px 0;border-bottom:2px solid transparent}
+.desktop-nav a:hover,.desktop-nav a.active{color:var(--teal);border-color:var(--teal)}
+.header-actions{display:flex;align-items:center;gap:10px}
+.lang{border:1px solid #e1e9eb;background:#fff;color:#476168;border-radius:10px;padding:10px 12px;font-size:12px;font-weight:700}
+.menu-btn{display:none;width:42px;height:42px;border:1px solid #dbe6e8;border-radius:11px;background:#fff;font-size:20px}
+.mobile-nav{display:flex;flex-direction:column;gap:4px;padding:12px 5% 18px;background:#fff;border-bottom:1px solid #eaf0f1;position:sticky;top:70px;z-index:19}
+.mobile-nav a{padding:12px;border-radius:10px;font-weight:600;font-size:14px;color:#35575e}
+.mobile-nav a:hover{background:#eef7f6}
+.btn{display:inline-flex;justify-content:center;align-items:center;gap:8px;min-height:43px;padding:11px 19px;border:1px solid transparent;border-radius:11px;font-size:13px;font-weight:700;text-align:center;transition:transform .2s,background .2s}
+.btn:hover{transform:translateY(-2px)}
+.btn-outline{background:#fff;color:#24525a;border-color:#dbe6e8}
+.btn-outline:hover{border-color:var(--teal);background:#f4fbfa}
+.btn-primary{background:var(--teal);color:#fff;box-shadow:0 6px 15px #168c882e}
+.btn-primary:hover{background:#117571}
+.btn-dark{background:var(--dark);color:#fff}
+.btn-danger{background:#c14e35;color:#fff}
+.btn-white{background:#fff;color:#145c5c}
+.btn-outline-white{border-color:#ffffff66;background:transparent;color:#fff}
+.btn-large{min-height:51px;padding:14px 22px;font-size:14px;border-radius:13px}
+.btn-sm{min-height:34px;padding:7px 12px;font-size:12px;border-radius:9px}
+.hero{max-width:1440px;margin:auto;padding:60px 5% 40px;display:grid;grid-template-columns:.95fr 1.05fr;align-items:center;gap:50px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;margin:0 0 18px;padding:8px 13px;border:1px solid #d9ece8;border-radius:30px;background:#eaf6f3;color:#197f7b;font-size:11px;font-weight:800;letter-spacing:.7px}
+.hero h1{margin:0;max-width:630px;font-size:clamp(36px,4.2vw,58px);line-height:1.13;letter-spacing:-2px;font-weight:800}
+.hero h1 span{color:var(--teal)}
+.hero-description{max-width:520px;margin:22px 0 26px;color:#687e84;font-size:15px;line-height:1.9}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px}
+.hero-points{display:flex;flex-wrap:wrap;gap:10px 17px;margin-top:25px}
+.hero-points>div{display:flex;align-items:center;gap:7px;color:#577279;font-size:12px;font-weight:600}
+.hero-points>div::before{content:'✓';width:19px;height:19px;display:grid;place-items:center;border-radius:50%;background:#dff3ec;color:var(--teal);font-weight:800}
+.hero-visual{position:relative;padding:0 0 28px 12px;min-width:0}
+.photo-frame{position:relative;overflow:hidden;width:100%;aspect-ratio:1.08/1;border:7px solid #fff;border-radius:28px;box-shadow:var(--shadow)}
+.photo-frame img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.deco{position:absolute;border-radius:50%;background:#ffffff1c}
+.d1{width:240px;height:240px;right:-60px;top:-60px}
+.d2{width:160px;height:160px;left:-40px;bottom:60px}
+.slide-ico{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:150px;height:150px;border-radius:50%;background:#ffffffee;display:grid;place-items:center;font-size:74px;box-shadow:0 14px 40px #0003;animation:fade .6s ease}
+.photo-wash{position:absolute;inset:45% 0 0;background:linear-gradient(transparent,#0d2a46cc)}
+.photo-label{position:absolute;left:20px;top:20px;padding:8px 13px;border-radius:30px;background:#fffffff0;color:#197d78;font-size:10px;font-weight:800}
+.photo-caption{position:absolute;bottom:22px;left:24px;right:24px;display:flex;align-items:flex-end;justify-content:space-between;gap:15px;color:#fff}
+.photo-caption h3{margin:0 0 5px;color:#fff;font-size:clamp(18px,2vw,25px)}
+.photo-caption p{margin:0;color:#e6f1f0;font-size:12px;line-height:1.6}
+.caption-number{font-size:12px;font-weight:700;white-space:nowrap}
+@keyframes fade{from{opacity:.5;transform:translate(-50%,-50%) scale(.94)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+.slide-controls{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:15px}
+.slide-controls button{width:9px;height:9px;padding:0;border:0;border-radius:30px;background:#cbd9db}
+.slide-controls button.selected{width:26px;background:var(--teal)}
+.journey-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:12px}
+.journey-chips span{padding:5px 9px;border-radius:30px;background:#eaf0f1;color:#7b8d92;font-size:10px;font-weight:700}
+.journey-chips span.on{background:var(--teal);color:#fff}
+.strip{max-width:1200px;margin:auto;padding:0 5% 50px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.strip-item{display:flex;align-items:center;gap:10px;padding:14px;border:1px solid #e5edef;border-radius:13px;background:#fff}
+.strip-item i{font-style:normal;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:#e7f5f2;font-size:18px;flex-shrink:0}
+.strip-item strong{display:block;color:#31545b;font-size:12px}
+.strip-item small{display:block;margin-top:3px;color:#8a9a9e;font-size:10px}
+.section{padding:60px 5%}
+.section-heading{max-width:680px;margin:0 auto 34px;text-align:center}
+.section-heading h2{margin:0;font-size:clamp(26px,3vw,38px);letter-spacing:-1.1px;line-height:1.25}
+.section-heading p{margin:14px auto 0;max-width:570px;color:#73868b;font-size:14px;line-height:1.8}
+.portals{background:#fff}
+.portal-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px;max-width:1060px;margin:auto}
+.portal-card{padding:30px;border:1px solid #e3ecee;border-radius:22px;background:#fbfdfd;transition:transform .25s,box-shadow .25s}
+.portal-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.portal-kicker{display:inline-block;margin-bottom:16px;padding:7px 11px;border-radius:30px;background:#e4f4ef;color:var(--teal);font-size:10px;font-weight:800;letter-spacing:.7px}
+.portal-card.patient .portal-kicker{background:#e5f3fa;color:#347ba0}
+.portal-card h3{margin:0 0 10px;font-size:24px}
+.portal-card>p{margin:0 0 20px;color:#75878c;font-size:13px;line-height:1.85}
+.portal-card ul{display:grid;gap:10px;padding:0;margin:0 0 24px;list-style:none}
+.portal-card li{display:flex;gap:9px;color:#506b71;font-size:12.5px;line-height:1.6}
+.portal-card li::before{content:'✓';color:var(--teal);font-weight:800}
+.portal-card>.btn{width:100%}
+.support-band{margin:0 5% 60px;padding:40px 44px;display:flex;align-items:center;justify-content:space-between;gap:25px;border-radius:24px;background:linear-gradient(120deg,#123b46,#176b6a);color:#fff}
+.support-band h2{max-width:550px;margin:0 0 12px;color:#fff;font-size:clamp(22px,3vw,32px);line-height:1.3}
+.support-band p{max-width:560px;margin:0;color:#d2e6e4;font-size:13px;line-height:1.8}
+.support-actions{display:flex;flex-wrap:wrap;gap:10px}
+.footer{padding:34px 5%;display:flex;align-items:center;justify-content:space-between;gap:25px;background:#fff;border-top:1px solid #e5edef;flex-wrap:wrap}
+.footer p{margin:8px 0 0;color:#809095;font-size:11px;line-height:1.8}
+.footer-links{display:flex;flex-wrap:wrap;gap:18px;align-items:center;color:#60777c;font-size:12px;font-weight:600}
+.footer-links button{border:0;background:none;color:#9a5b4a;font-size:12px;font-weight:600;padding:0}
+.page{max-width:1100px;margin:auto;padding:44px 5% 70px}
+.page h1{margin:0 0 8px;font-size:clamp(26px,3.4vw,38px);letter-spacing:-1px}
+.page .lead{color:#6d8187;font-size:14px;line-height:1.8;max-width:720px;margin:0 0 28px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(4,1fr)}
+.card{padding:22px;border:1px solid #e1ebec;border-radius:17px;background:#fff}
+.card h3{margin:0 0 8px;font-size:16px}
+.card p,.card li{color:#6d8187;font-size:13px;line-height:1.75;margin:0}
+.card ul{margin:0;padding-left:18px}
+.card .num{width:38px;height:38px;display:grid;place-items:center;margin-bottom:14px;border-radius:12px;background:#e5f4f0;color:var(--teal);font-weight:800;font-size:13px}
+.insight{margin-top:24px;padding:16px 22px;border-radius:14px;background:#123b46;color:#fff;font-weight:600;font-size:14px;line-height:1.7}
+.bar-row{display:grid;grid-template-columns:190px 1fr 52px;gap:12px;align-items:center;margin:10px 0;font-size:12px;color:#48656b}
+.bar{height:12px;border-radius:30px;background:#e8f0f1;overflow:hidden}.bar i{display:block;height:100%;background:var(--teal);border-radius:30px}
+.big-stat{font-family:Manrope,sans-serif;font-size:42px;font-weight:800;color:var(--teal);line-height:1}
+.safe-note,.warn-note{margin-top:18px;padding:14px 18px;border-radius:13px;font-size:12.5px;line-height:1.75}
+.safe-note{background:#e7f4f0;border:1px solid #dcece8;color:#3f6667}
+.warn-note{background:#fff8e8;border:1px solid #f0dfb6;color:#806c4d}
+.tl{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.tl .card b{display:inline-block;margin-bottom:10px;padding:5px 10px;border-radius:30px;background:#eaf6f3;color:var(--teal);font-size:11px}
+.auth-page{min-height:70vh;display:grid;place-items:center;padding:40px 5%}
+.auth-card{width:100%;max-width:470px;padding:32px;border:1px solid #e6efef;border-radius:24px;background:#fff;box-shadow:var(--shadow)}
+.auth-eyebrow{display:inline-block;margin:0 0 10px;color:var(--teal);font-size:10px;font-weight:800;letter-spacing:1px}
+.auth-card h1{margin:0 0 10px;font-size:27px;letter-spacing:-.7px}
+.auth-intro{margin:0 0 22px;color:#788b8f;font-size:12.5px;line-height:1.8}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;color:#36575e;font-size:12px;font-weight:700}
+.field input,.field select,.field textarea,.filters input,.filters select{width:100%;min-height:43px;padding:11px 12px;border:1px solid #dce7e9;border-radius:10px;background:#fbfdfd;color:#21454d;font-size:13px;font-weight:400}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);outline:none;box-shadow:0 0 0 3px #168c881a}
+.check{display:flex;gap:10px;align-items:flex-start;margin:0 0 10px;padding:11px 12px;border:1px solid #e1ebec;border-radius:10px;font-size:13px;color:#3c5a61;font-weight:500}
+.check input{margin-top:3px;width:auto}
+.demo-box{margin-top:18px;padding:12px;border:1px dashed #e4d7bd;border-radius:10px;background:#fffaf0;color:#806c4d;font-size:11px;line-height:1.9}
+.dash{min-height:80vh;padding:32px 5% 60px;background:#f3f7f8}
+.dash-top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:26px}
+.dash-top h1{margin:0 0 6px;font-size:clamp(24px,3vw,33px)}
+.dash-top p{margin:0;color:#7b8d92;font-size:12.5px;line-height:1.7}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.demo-tag{display:inline-flex;padding:7px 12px;border:1px solid #f0dfb6;border-radius:30px;background:#fff8e8;color:#98733a;font-size:10px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat-card{padding:19px;border:1px solid #e4ecee;border-radius:16px;background:#fff}
+.stat-card span,.stat-card small{display:block}
+.stat-card span{color:#7c8e92;font-size:11px}
+.stat-card strong{display:block;margin:9px 0 4px;color:#163f48;font-family:Manrope,sans-serif;font-size:28px}
+.stat-card small{color:var(--teal);font-size:10px}
+.case-card{overflow:hidden;margin-bottom:22px;border:1px solid #e2eaec;border-radius:17px;background:#fff}
+.case-head{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;padding:18px 20px;border-bottom:1px solid #eaf0f1}
+.case-head h3{margin:0;font-size:15px}
+.filters{display:flex;gap:9px;flex-wrap:wrap}.filters input{min-width:200px}.filters select{width:auto}
+.table-wrap{width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse;white-space:nowrap}
+th{padding:13px 16px;background:#f8fbfb;color:#7b8d92;font-size:10px;font-weight:800;text-align:left;text-transform:uppercase;letter-spacing:.4px}
+td{padding:14px 16px;border-top:1px solid #edf1f2;color:#48656b;font-size:12.5px;vertical-align:middle}
+.sub{display:block;margin-top:3px;color:#839398;font-size:10.5px}
+.status,.risk{display:inline-flex;align-items:center;padding:6px 10px;border-radius:30px;font-size:10px;font-weight:800;white-space:nowrap}
+.status{background:#e7f5ed;color:#317b59}
+.status.Overdue{background:#fff0ec;color:#c14e35}.status.Duetoday{background:#fff6e3;color:#9b7022}.status.Completed,.status.Closed{background:#edf1f2;color:#6d8187}
+.risk.high{background:#fff0ec;color:#c14e35}.risk.medium{background:#fff6e3;color:#9b7022}.risk.low{background:#e8f5ee;color:#34785a}
+.empty-state{padding:26px;text-align:center;color:#7b8d92;font-size:13px}
+.two{display:grid;grid-template-columns:1.25fr 1fr;gap:20px;align-items:start}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:8px 14px;font-size:13px;color:#48656b}.kv b{color:#7b8d92;font-weight:600}
+.journey{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:14px 0}
+.j{text-align:center;font-size:10px;color:#9aa9ad;font-weight:600}
+.j b{display:grid;place-items:center;width:30px;height:30px;margin:0 auto 6px;border-radius:50%;background:#e8eef0;color:#7b8d92}
+.j.on{color:#21464d}.j.on b{background:var(--teal);color:#fff}
+.log{border-left:2px solid #dbe8e8;margin:0 0 16px 6px;padding-left:16px}
+.log div{margin-bottom:12px;font-size:12.5px;color:#48656b}.log small{display:block;color:#8a9a9e;font-size:10.5px}
+.reason{margin:0 0 8px;padding:10px 12px;border-radius:10px;background:#fff6f3;color:#8a4a39;font-size:12.5px}
+.action-i{margin:0 0 8px;padding:10px 12px;border-radius:10px;background:#eef8f5;color:#2c6a60;font-size:12.5px}
+.pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.pill{padding:6px 10px;border-radius:30px;background:#eef3f4;color:#55707a;font-size:11px;font-weight:700}
+.fu-card{display:block;padding:20px;border:1px solid #e1ebec;border-radius:17px;background:#fff;transition:transform .2s,box-shadow .2s}
+.fu-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.fu-card h3{margin:0 0 6px;font-size:16px}
+.due-pill{display:inline-block;margin-bottom:12px;padding:6px 11px;border-radius:30px;font-size:11px;font-weight:800;background:#e7f5ed;color:#317b59}
+.due-pill.late{background:#fff0ec;color:#c14e35}.due-pill.today{background:#fff6e3;color:#9b7022}.due-pill.done{background:#edf1f2;color:#6d8187}
+.alert{margin-bottom:18px;padding:14px 18px;border-radius:13px;background:#fff0ec;border:1px solid #f5d5cb;color:#9c3f2a;font-size:13px;font-weight:600}
+.map{width:100%;height:340px;border:0;border-radius:14px;background:#e8eef0}
+.ride{display:grid;grid-template-columns:44px 1.3fr 1fr auto;gap:14px;align-items:center;padding:14px 0;border-top:1px solid #edf1f2}
+.ride:first-child{border-top:0}.ride i{font-style:normal;font-size:28px}.ride b{display:block;font-size:13px;color:#21464d}.ride small{color:#8a9a9e;font-size:11px;line-height:1.5}
+.fare{font-family:Manrope,sans-serif;font-weight:800;color:var(--dark);font-size:15px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;pointer-events:none;z-index:200;max-width:92vw;padding:13px 20px;border-radius:13px;background:#123b46;color:#fff;font-size:13px;box-shadow:0 12px 40px #0004;transition:.3s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.chat-launcher{position:fixed;right:22px;bottom:22px;z-index:70;padding:14px 18px;border:0;border-radius:30px;background:var(--teal);color:#fff;box-shadow:0 9px 30px #168c8844;font-weight:700}
+.chat-panel{position:fixed;right:22px;bottom:22px;z-index:80;width:min(390px,calc(100vw - 28px));height:min(520px,calc(100vh - 45px));display:flex;flex-direction:column;overflow:hidden;border:1px solid #dce8e8;border-radius:20px;background:#fff;box-shadow:0 20px 70px #123b4633}
+.chat-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;background:var(--dark);color:#fff}
+.chat-head strong,.chat-head small{display:block}.chat-head small{margin-top:4px;color:#d2e6e4;font-size:10px}
+.modal-close{width:34px;height:34px;border:1px solid #ffffff40;border-radius:10px;background:#ffffff18;color:#fff;font-size:20px}
+.chat-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding:16px;background:#f5f9f9}
+.chat-bubble{align-self:flex-start;max-width:92%;padding:11px 13px;border:1px solid #e0ebeb;border-radius:13px 13px 13px 3px;background:#fff;color:#476168;font-size:12.5px;line-height:1.7;white-space:pre-wrap}
+.chat-user{align-self:flex-end;border-radius:13px 13px 3px 13px;background:#e8f6f1;color:#245b58}
+.chat-compose{display:flex;gap:8px;padding:12px;border-top:1px solid #e7eeee}
+.chat-compose input{min-width:0;flex:1;border:1px solid #dce7e9;border-radius:10px;padding:10px;font-size:12.5px}
+@media(max-width:1100px){.desktop-nav{gap:14px}.desktop-nav a{font-size:12px}.hero{gap:30px}.g4,.tl,.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.desktop-nav,.header-actions .btn{display:none}.menu-btn{display:block}.hero{grid-template-columns:1fr;padding-top:40px}.portal-grid,.g2,.g3,.two{grid-template-columns:1fr}.strip{grid-template-columns:1fr 1fr}.support-band{flex-direction:column;align-items:flex-start;padding:28px 22px}.ride{grid-template-columns:40px 1fr}.ride>*:nth-child(n+3){grid-column:2}.bar-row{grid-template-columns:110px 1fr 44px}}
+@media(max-width:560px){.g4,.tl,.stats,.strip{grid-template-columns:1fr}.journey{grid-template-columns:repeat(3,1fr)}.kv{grid-template-columns:1fr}.brand small{display:none}.auth-card{padding:24px 18px}.announcement{font-size:10px}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="site" id="app"></div>
+<div id="chat-root"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ================= CONFIG ================= */
+const H={name:'District Civil Hospital (Demo)',city:'Ludhiana, Punjab',lat:30.9097,lng:75.8527}; // apne hospital ke coordinates yaha daalo
+const LS='aarambh_demo_v1',LANG_KEY='aarambh_lang',SES_KEY='aarambh_session';
+const OTP_DEMO='123456';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+
+/* ================= i18n ================= */
+const T={
+en:{nav_home:'Home',nav_problem:'The Problem',nav_how:'How It Works',nav_roles:'AI & Humans',nav_roadmap:'Roadmap & Impact',patient_portal:'Patient Portal',hospital_admin:'Hospital Administration',hero_1:'Follow-up care that fits',hero_2:'real life',hero_desc:'AARAMBH finds out why a patient may miss a follow-up and helps the hospital team remove that barrier — before the visit is lost.',login_title:'Patient login',mobile:'Registered mobile number',send_otp:'Send OTP',otp:'Enter OTP',verify:'Verify & login',logout:'Logout',hello:'Hello',your_followups:'Your follow-ups',due_today:'Due today',overdue_by:'Overdue by {n} day(s)',due_in:'Due in {n} day(s)',completed:'Completed',distance:'Distance from hospital',plan_travel:'Plan my travel',view:'View details',confirm:'I will come',reschedule:'Ask to reschedule',barrier:'Report a problem',assist:'Ask for help at hospital',emergency:'In an emergency call 112 (or 108 for an ambulance). This portal does not give medical advice.',next_followup:'Next follow-up',doctor:'Doctor',date:'Date',time:'Time',dept:'Department',instructions:'Instructions from your doctor',docs:'Bring these with you',history:'Completed visits',staff_id:'Staff ID',password:'Password',login:'Login',back:'Back',profile:'My contact details',overdue_alert:'You have an overdue follow-up. Please confirm your visit or ask for help.'},
+hi:{nav_home:'होम',nav_problem:'समस्या',nav_how:'कैसे काम करता है',nav_roles:'AI और इंसान',nav_roadmap:'रोडमैप और प्रभाव',patient_portal:'रोगी पोर्टल',hospital_admin:'अस्पताल प्रशासन',hero_1:'फॉलो-अप देखभाल जो',hero_2:'आपकी असल ज़िंदगी में फिट हो',hero_desc:'AARAMBH पता लगाता है कि मरीज़ फॉलो-अप क्यों चूक सकता है और अस्पताल की टीम को वह बाधा हटाने में मदद करता है — विज़िट छूटने से पहले।',login_title:'रोगी लॉगिन',mobile:'पंजीकृत मोबाइल नंबर',send_otp:'OTP भेजें',otp:'OTP दर्ज करें',verify:'सत्यापित करें और लॉगिन करें',logout:'लॉगआउट',hello:'नमस्ते',your_followups:'आपके फॉलो-अप',due_today:'आज देय',overdue_by:'{n} दिन से बकाया',due_in:'{n} दिन में देय',completed:'पूर्ण',distance:'अस्पताल से दूरी',plan_travel:'यात्रा की योजना',view:'विवरण देखें',confirm:'मैं आऊँगा/आऊँगी',reschedule:'तारीख बदलने का अनुरोध',barrier:'समस्या बताएँ',assist:'अस्पताल में मदद माँगें',emergency:'आपातकाल में 112 (एम्बुलेंस के लिए 108) पर कॉल करें। यह पोर्टल चिकित्सा सलाह नहीं देता।',next_followup:'अगला फॉलो-अप',doctor:'डॉक्टर',date:'तारीख',time:'समय',dept:'विभाग',instructions:'डॉक्टर के निर्देश',docs:'साथ लाएँ',history:'पूरी हुई विज़िट',staff_id:'स्टाफ आईडी',password:'पासवर्ड',login:'लॉगिन',back:'वापस',profile:'मेरे संपर्क विवरण',overdue_alert:'आपका एक फॉलो-अप बकाया है। कृपया विज़िट की पुष्टि करें या मदद माँगें।'},
+pa:{nav_home:'ਹੋਮ',nav_problem:'ਸਮੱਸਿਆ',nav_how:'ਇਹ ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ',nav_roles:'AI ਅਤੇ ਇਨਸਾਨ',nav_roadmap:'ਰੋਡਮੈਪ ਅਤੇ ਪ੍ਰਭਾਵ',patient_portal:'ਮਰੀਜ਼ ਪੋਰਟਲ',hospital_admin:'ਹਸਪਤਾਲ ਪ੍ਰਸ਼ਾਸਨ',hero_1:'ਫਾਲੋ-ਅੱਪ ਦੇਖਭਾਲ ਜੋ',hero_2:'ਤੁਹਾਡੀ ਅਸਲ ਜ਼ਿੰਦਗੀ ਵਿੱਚ ਫਿੱਟ ਹੋਵੇ',hero_desc:'AARAMBH ਇਹ ਪਤਾ ਲਗਾਉਂਦਾ ਹੈ ਕਿ ਮਰੀਜ਼ ਫਾਲੋ-ਅੱਪ ਕਿਉਂ ਖੁੰਝ ਸਕਦਾ ਹੈ ਅਤੇ ਹਸਪਤਾਲ ਟੀਮ ਨੂੰ ਇਹ ਰੁਕਾਵਟ ਦੂਰ ਕਰਨ ਵਿੱਚ ਮਦਦ ਕਰਦਾ ਹੈ — ਵਿਜ਼ਿਟ ਖੁੰਝਣ ਤੋਂ ਪਹਿਲਾਂ।',login_title:'ਮਰੀਜ਼ ਲੌਗਇਨ',mobile:'ਰਜਿਸਟਰਡ ਮੋਬਾਈਲ ਨੰਬਰ',send_otp:'OTP ਭੇਜੋ',otp:'OTP ਦਰਜ ਕਰੋ',verify:'ਪੁਸ਼ਟੀ ਕਰੋ ਅਤੇ ਲੌਗਇਨ ਕਰੋ',logout:'ਲੌਗਆਊਟ',hello:'ਸਤ ਸ੍ਰੀ ਅਕਾਲ',your_followups:'ਤੁਹਾਡੇ ਫਾਲੋ-ਅੱਪ',due_today:'ਅੱਜ ਦੇਣ ਯੋਗ',overdue_by:'{n} ਦਿਨ ਤੋਂ ਬਕਾਇਆ',due_in:'{n} ਦਿਨਾਂ ਵਿੱਚ',completed:'ਮੁਕੰਮਲ',distance:'ਹਸਪਤਾਲ ਤੋਂ ਦੂਰੀ',plan_travel:'ਸਫ਼ਰ ਦੀ ਯੋਜਨਾ',view:'ਵੇਰਵੇ ਵੇਖੋ',confirm:'ਮੈਂ ਆਵਾਂਗਾ/ਆਵਾਂਗੀ',reschedule:'ਤਾਰੀਖ਼ ਬਦਲਣ ਦੀ ਬੇਨਤੀ',barrier:'ਸਮੱਸਿਆ ਦੱਸੋ',assist:'ਹਸਪਤਾਲ ਵਿੱਚ ਮਦਦ ਮੰਗੋ',emergency:'ਐਮਰਜੈਂਸੀ ਵਿੱਚ 112 (ਐਂਬੂਲੈਂਸ ਲਈ 108) ਤੇ ਕਾਲ ਕਰੋ। ਇਹ ਪੋਰਟਲ ਮੈਡੀਕਲ ਸਲਾਹ ਨਹੀਂ ਦਿੰਦਾ।',next_followup:'ਅਗਲਾ ਫਾਲੋ-ਅੱਪ',doctor:'ਡਾਕਟਰ',date:'ਤਾਰੀਖ਼',time:'ਸਮਾਂ',dept:'ਵਿਭਾਗ',instructions:'ਡਾਕਟਰ ਦੀਆਂ ਹਦਾਇਤਾਂ',docs:'ਨਾਲ ਲਿਆਓ',history:'ਮੁਕੰਮਲ ਵਿਜ਼ਿਟਾਂ',staff_id:'ਸਟਾਫ਼ ਆਈਡੀ',password:'ਪਾਸਵਰਡ',login:'ਲੌਗਇਨ',back:'ਵਾਪਸ',profile:'ਮੇਰੇ ਸੰਪਰਕ ਵੇਰਵੇ',overdue_alert:'ਤੁਹਾਡਾ ਇੱਕ ਫਾਲੋ-ਅੱਪ ਬਕਾਇਆ ਹੈ। ਕਿਰਪਾ ਕਰਕੇ ਵਿਜ਼ਿਟ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ ਜਾਂ ਮਦਦ ਮੰਗੋ।'}
+};
+let LANG=store.get(LANG_KEY,'en');
+const t=k=>(T[LANG]&&T[LANG][k])||T.en[k]||k;
+
+/* ================= date helpers ================= */
+const DAY=86400000;
+const sod=d=>{const x=new Date(d);x.setHours(0,0,0,0);return x};
+const isoOf=d=>{const x=sod(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0')};
+const plusDays=n=>{const d=sod(new Date());d.setDate(d.getDate()+n);return isoOf(d)};
+const parseISO=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const diffDays=s=>Math.round((parseISO(s)-sod(new Date()))/DAY);
+const fmtDate=s=>parseISO(s).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});
+function fmtTime(s){const [h,m]=s.split(':').map(Number);return ((h%12)||12)+':'+String(m).padStart(2,'0')+' '+(h<12?'AM':'PM')}
+function fmtMin(x){x=Math.max(0,Math.round(x));return fmtTime(Math.floor(x/60)%24+':'+(x%60))}
+
+/* ================= static data ================= */
+const ROLES={
+ doctor:{label:'Doctor',icon:'🩺',group:'Doctor',desc:'Review follow-up plans, add clinical notes, approve plans'},
+ nurse:{label:'Nurse',icon:'👩‍⚕️',group:'Staff',desc:'Call list, contact attempts, verify patient details'},
+ clinician:{label:'Clinician (Follow-up Desk)',icon:'📋',group:'Staff',desc:'Review risk flags, approve navigation plans, close the loop'},
+ ward:{label:'Ward Boy / Patient Assistant',icon:'🧑‍🔧',group:'Staff',desc:'Wheelchair, escort and guidance tasks'},
+ pharmacist:{label:'Pharmacist (Medicine Counter)',icon:'💊',group:'Staff',desc:'Prepare and dispense medicines for follow-up visits'},
+ admin:{label:'Administrator',icon:'🏥',group:'Administration',desc:'Hospital-wide view, workload and outcomes'}
+};
+const STAFF=[
+ {id:'DOC101',pw:'doc@123',role:'doctor',name:'Dr. Harpreet Singh',dept:'Medicine OPD'},
+ {id:'DOC103',pw:'doc@123',role:'doctor',name:'Dr. Rajiv Mehta',dept:'Surgery OPD'},
+ {id:'DOC104',pw:'doc@123',role:'doctor',name:'Dr. Anil Verma',dept:'Cardiology OPD'},
+ {id:'NUR201',pw:'nurse@123',role:'nurse',name:'Nurse Simran Kaur',dept:'OPD Ward'},
+ {id:'CLN401',pw:'clin@123',role:'clinician',name:'Clinician Manpreet',dept:'Follow-up Desk'},
+ {id:'WB301',pw:'ward@123',role:'ward',name:'Ward Boy Sukhdev',dept:'Patient Assistance'},
+ {id:'PH501',pw:'pharma@123',role:'pharmacist',name:'Pharmacist Rohit',dept:'Hospital Pharmacy'},
+ {id:'ADM001',pw:'admin@123',role:'admin',name:'Hospital Administrator',dept:'Administration'}
+];
+const BARRIERS=['Shared phone','Long distance','Unclear instructions','Cost of travel','Needs escort / wheelchair','No one to accompany','Language support needed','Long waiting time'];
+const FAILED=['No answer','Wrong number','Switched off'];
+const CONTACT_RESULTS=['Answered – will come','Answered – needs help','No answer','Wrong number','Switched off','SMS delivered','WhatsApp message sent'];
+const SLIDES=[
+ {ico:'🩺',title:'Patient visit',text:'The patient consults at the district hospital and a follow-up is advised.',bg:['#168c88','#0e5f7a'],photo:''},
+ {ico:'📅',title:'Follow-up due',text:'The clinician’s instruction becomes a dated task with required documents.',bg:['#2b6cb0','#1a4a7a'],photo:''},
+ {ico:'⚠️',title:'Barrier identified',text:'Shared phone, distance or unclear instructions are flagged early.',bg:['#d9822b','#a4561a'],photo:''},
+ {ico:'🎧',title:'Support offered',text:'Staff review and offer practical help: callback, escort, travel options.',bg:['#6b46c1','#43307f'],photo:''},
+ {ico:'📲',title:'Reminder / coordination',text:'A staff-approved reminder reaches the patient in their own language.',bg:['#0f8f6f','#0a5c4a'],photo:''},
+ {ico:'✅',title:'Care completed',text:'The visit is verified and the follow-up loop is closed.',bg:['#2f855a','#1c5a3a'],photo:''}
+]; // photo:'images/step1.jpg' daalne par asli photo dikhegi, warna illustration
+
+/* ================= database (demo, localStorage) ================= */
+function seed(){
+ const P=(id,name,phone,age,area,lat,lng,lang,shared,missed)=>({id,name,phone,age,area,lat,lng,lang,sharedPhone:shared,missedBefore:missed,altPhone:''});
+ const F=(id,pid,title,dept,doctor,off,time,ins,docs,barriers,contacts,extra)=>Object.assign({id,pid,title,dept,doctor,due:plusDays(off),time,instructions:ins,docs,docsReady:[],barriers,contacts:contacts.map(c=>Object.assign({},c,{date:plusDays(c.d)})),status:'pending',confirmed:false,planApproved:false,reschedReq:null,callback:false,note:''},extra||{});
+ return {nextId:100,
+ patients:[
+  P('P1','Gurpreet Kaur','9000000001',58,'Jagraon',30.7886,75.4725,'pa',true,1),
+  P('P2','Ramesh Kumar','9000000002',64,'Haibowal, Ludhiana',30.9330,75.8210,'hi',false,0),
+  P('P3','Sunita Devi','9000000003',41,'Doraha',30.7967,76.0267,'hi',false,0),
+  P('P4','Baljit Singh','9000000004',72,'Khanna',30.7058,76.2219,'pa',true,2),
+  P('P5','Anita Sharma','9000000005',29,'Model Town, Ludhiana',30.8890,75.8420,'en',false,0),
+  P('P6','Mohd. Irfan','9000000006',35,'Sahnewal',30.8403,75.9529,'hi',false,1)],
+ followups:[
+  F('F1','P1','BP review + blood test','Medicine OPD','Dr. Harpreet Singh',-4,'10:30','Come for the blood test as instructed by the lab desk. Bring your previous prescription and lab slip.',['Previous prescription','Lab slip','ID card'],['Shared phone','Long distance'],[{d:-5,by:'Nurse Simran Kaur',mode:'Call',result:'No answer',note:''}]),
+  F('F2','P2','Diabetes review','Medicine OPD','Dr. Harpreet Singh',3,'11:00','Bring your glucose diary and all current medicines.',['Glucose diary','Current medicines'],[],[]),
+  F('F3','P2','Eye check-up (referral)','Ophthalmology OPD','Dr. Neha Arora',10,'12:00','Referral visit. Bring your previous eye reports if any.',['Referral slip'],[],[]),
+  F('F4','P3','Post-discharge wound check','Surgery OPD','Dr. Rajiv Mehta',0,'09:30','Bring the discharge summary. Wear loose clothing.',['Discharge summary'],['Unclear instructions'],[{d:-1,by:'Nurse Simran Kaur',mode:'Call',result:'Answered – needs help',note:'Asked what to bring'}]),
+  F('F5','P4','Cardiology clinic follow-up','Cardiology OPD','Dr. Anil Verma',-9,'10:00','Bring your ECG report and medicine strips.',['ECG report','Medicine strips'],['Long distance','Needs escort / wheelchair'],[{d:-7,by:'Nurse Simran Kaur',mode:'Call',result:'No answer',note:''},{d:-4,by:'Clinician Manpreet',mode:'Call',result:'Wrong number',note:'Number belongs to a neighbour'}]),
+  F('F6','P5','Antenatal check-up','Gynaecology OPD','Dr. Kavita Gill',7,'09:00','Bring your maternity card and previous reports.',['Maternity card','Previous reports'],[],[]),
+  F('F7','P6','Chest clinic review','Chest OPD','Dr. Sandeep Bedi',-2,'11:30','Bring your treatment card and reports.',['Treatment card'],['Cost of travel'],[{d:-3,by:'Nurse Simran Kaur',mode:'SMS',result:'SMS delivered',note:''}]),
+  F('F8','P1','Medication review','Medicine OPD','Dr. Harpreet Singh',-30,'10:00','Routine review.',[],[],[],{status:'completed',outcome:'Attended at this hospital',completedOn:plusDays(-30),confirmed:true}),
+  F('F9','P4','Physiotherapy session','Physiotherapy','Dr. Anil Verma',-20,'12:00','Routine session.',[],[],[],{status:'completed',outcome:'Attended at this hospital',completedOn:plusDays(-20),confirmed:true})],
+ rx:[
+  {id:'R1',fid:'F1',pid:'P1',items:['Amlodipine 5 mg · 30 tabs','Telmisartan 40 mg · 30 tabs'],status:'pending'},
+  {id:'R2',fid:'F2',pid:'P2',items:['Metformin 500 mg · 60 tabs','Glucose test strips · 1 box'],status:'pending'},
+  {id:'R3',fid:'F5',pid:'P4',items:['Atorvastatin 20 mg · 30 tabs','Aspirin 75 mg · 30 tabs'],status:'pending'},
+  {id:'R4',fid:'F4',pid:'P3',items:['Dressing kit · 1','Paracetamol 500 mg · 10 tabs'],status:'pending'}],
+ tasks:[
+  {id:'T1',pid:'P4',fid:'F5',type:'Wheelchair + escort',from:'OPD Registration',to:'Cardiology OPD, Room 7',when:'On arrival',status:'open',source:'Care plan'},
+  {id:'T2',pid:'P3',fid:'F4',type:'Guide to department',from:'OPD Registration',to:'Surgery OPD',when:'Today 09:30',status:'open',source:'Care plan'},
+  {id:'T3',pid:'P1',fid:'F1',type:'Escort to lab (sample collection)',from:'OPD Registration',to:'Pathology Lab',when:'On arrival',status:'open',source:'Care plan'}]};
+}
+let DB=store.get(LS,null)||seed();
+function save(){store.set(LS,DB)}
+let SESSION=store.get(SES_KEY,null);
+const uid=p=>{DB.nextId=(DB.nextId||100)+1;return p+DB.nextId};
+const pt=id=>DB.patients.find(p=>p.id===id);
+const fu=id=>DB.followups.find(f=>f.id===id);
+const me=()=>SESSION&&SESSION.type==='patient'?pt(SESSION.id):null;
+const staff=()=>SESSION&&SESSION.type==='staff'?STAFF.find(s=>s.id===SESSION.id):null;
+const addContact=(f,o)=>f.contacts.push({date:plusDays(0),by:o.by,mode:o.mode,result:o.result,note:o.note||''});
+
+/* ================= risk engine (transparent rules) ================= */
+const hav=(a,b,c,d)=>{const R=6371,r=x=>x*Math.PI/180,dl=r(c-a),dn=r(d-b);const x=Math.sin(dl/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(dn/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
+const roadKm=(lat,lng)=>Math.max(.5,Math.round(hav(lat,lng,H.lat,H.lng)*1.3*10)/10);
+const distKm=p=>roadKm(p.lat,p.lng);
+function riskOf(f){
+ if(f.status!=='pending')return{score:0,level:'low',reasons:[],actions:[]};
+ const p=pt(f.pid),d=diffDays(f.due),R=[],A=[];let s=0;
+ if(d<0){s+=Math.min(40,10+(-d)*3);R.push('Overdue by '+(-d)+' day(s)');A.push('Call the patient today and offer the earliest available slot')}
+ else if(d<=2&&!f.confirmed){s+=10;R.push('Due within 2 days and not yet confirmed');A.push('Send a staff-approved reminder with clear instructions')}
+ if(p.sharedPhone&&!p.altPhone){s+=15;R.push('Shared phone number – message may not reach the patient');A.push('Ask who answers this phone and record an alternate contact')}
+ const km=distKm(p);
+ if(km>40){s+=20;R.push('Lives about '+km+' km from the hospital');A.push('Share travel / ride options and try to bundle lab + consultation on one day')}
+ else if(km>20){s+=10;R.push('Lives about '+km+' km from the hospital');A.push('Share travel options and expected leave-by time')}
+ const bp={'Unclear instructions':[10,'Instructions unclear to the patient','Send simplified instructions in the patient’s language'],'Needs escort / wheelchair':[10,'Needs escort / wheelchair','Book a ward-boy escort and wheelchair at arrival'],'Cost of travel':[10,'Travel cost is a concern','Share low-cost ride options; check eligibility for hospital transport support'],'No one to accompany':[8,'No one to accompany the patient','Ask the community health worker / family to help'],'Language support needed':[6,'Needs language support','Assign a staff member who speaks the patient’s language'],'Long waiting time':[6,'Long waiting time reported','Offer a timed slot to cut waiting']};
+ f.barriers.forEach(b=>{if(bp[b]){s+=bp[b][0];R.push(bp[b][1]);A.push(bp[b][2])}});
+ if(p.missedBefore>=1){s+=15;R.push('Missed '+p.missedBefore+' earlier follow-up(s)')}
+ const last=f.contacts.filter(c=>c.by!=='Patient (portal)').slice(-1)[0];
+ if(last&&FAILED.includes(last.result)){s+=10;R.push('Last contact attempt failed ('+last.result+')');A.push('Retry at a different time, or reach the family / community health worker')}
+ if(f.escalated){s+=10;R.push('Escalated by staff')}
+ if(f.confirmed)s-=25;
+ s=Math.max(0,Math.min(100,s));
+ return{score:s,level:s>=60?'high':s>=30?'medium':'low',reasons:R,actions:[...new Set(A)]};
+}
+function statusOf(f){
+ if(f.status==='completed')return{label:'Completed',cls:'Completed'};
+ if(f.status==='closed')return{label:'Closed',cls:'Closed'};
+ if(f.reschedReq)return{label:'Reschedule requested',cls:'Reschedule'};
+ const d=diffDays(f.due);
+ if(d<0)return{label:'Overdue',cls:'Overdue'};
+ if(d===0)return{label:'Due today',cls:'Duetoday'};
+ return f.confirmed?{label:'Confirmed',cls:'Confirmed'}:{label:'Upcoming',cls:'Upcoming'};
+}
+const cases=()=>DB.followups.map(f=>({f,p:pt(f.pid),r:riskOf(f),st:statusOf(f),d:diffDays(f.due)})).sort((a,b)=>(a.f.status==='pending'?0:1)-(b.f.status==='pending'?0:1)||b.r.score-a.r.score);
+function dueText(f){const d=diffDays(f.due);if(f.status!=='pending')return t('completed');if(d<0)return t('overdue_by').replace('{n}',-d);if(d===0)return t('due_today');return t('due_in').replace('{n}',d)}
+const dueCls=f=>f.status!=='pending'?'done':diffDays(f.due)<0?'late':diffDays(f.due)===0?'today':'';
+
+/* ================= UI state ================= */
+const UI={menu:false,slide:0,otp:false,phone:'',round:false,chat:false,geoMsg:'',msgs:[{t:'Hi! I can help with login, follow-ups, travel and ambulance info. I cannot give medical advice.'}]};
+let GEO=null,slideTimer=null;
+function toast(m){const e=$('#toast');e.textContent=m;e.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('show'),3400)}
+function go(h){if(location.hash===h)render();else location.hash=h}
+
+/* ================= shared layout ================= */
+function announce(){return`<div class="announcement"><span class="announcement-pill">DEMO</span>AI Synergy Hackathon 2026 · Team AARAMBH · Case 03 · Sample data only</div>`}
+function header(){
+ const cur=location.hash||'#/';
+ const L=[['#/',t('nav_home')],['#/problem',t('nav_problem')],['#/how',t('nav_how')],['#/roles',t('nav_roles')],['#/roadmap',t('nav_roadmap')]];
+ const nav=L.map(l=>`<a href="${l[0]}" class="${cur===l[0]||(l[0]!=='#/'&&cur.startsWith(l[0]))?'active':''}">${l[1]}</a>`).join('');
+ return`<header class="site-header"><a class="brand" href="#/"><span class="brand-mark">A</span><span><strong>AARAMBH</strong><small>Follow-up Navigator</small></span></a>
+ <nav class="desktop-nav">${nav}</nav>
+ <div class="header-actions"><select class="lang" data-change="lang" aria-label="Language"><option value="en"${LANG==='en'?' selected':''}>English</option><option value="hi"${LANG==='hi'?' selected':''}>हिन्दी</option><option value="pa"${LANG==='pa'?' selected':''}>ਪੰਜਾਬੀ</option></select>
+ <a class="btn btn-outline" href="#/patient">${t('patient_portal')}</a><a class="btn btn-primary" href="#/admin">${t('hospital_admin')}</a>
+ <button class="menu-btn" data-act="menu" aria-label="Menu">${UI.menu?'×':'☰'}</button></div></header>
+ ${UI.menu?`<nav class="mobile-nav">${nav}<a href="#/patient"><b>${t('patient_portal')}</b></a><a href="#/admin"><b>${t('hospital_admin')}</b></a></nav>`:''}`;
+}
+function footer(){return`<footer class="footer"><div><a class="brand" href="#/"><span class="brand-mark">A</span><span><strong>AARAMBH</strong><small>Care That Fits Real Life</small></span></a><p>Prototype for AI Synergy Hackathon 2026. AI supports coordination and communication — not diagnosis, treatment decisions or emergency advice.</p></div><div class="footer-links"><a href="#/patient">${t('patient_portal')}</a><a href="#/admin">${t('hospital_admin')}</a><button data-act="reset">Reset demo data</button></div></footer>`}
+const notFound=()=>`<div class="page"><h1>Page not found</h1><p class="lead">This page does not exist.</p><a class="btn btn-primary" href="#/">Go home</a></div>`;
+const deny=()=>`<div class="page"><h1>Not available for your role</h1><p class="lead">Please use the options available on your dashboard.</p><a class="btn btn-primary" href="#/admin">Back to dashboard</a></div>`;
+
+/* ================= HOME ================= */
+function slideHTML(){
+ const s=SLIDES[UI.slide],n=UI.slide+1;
+ return`<div class="photo-frame" style="background:linear-gradient(135deg,${s.bg[0]},${s.bg[1]})"><div class="deco d1"></div><div class="deco d2"></div>
+ ${s.photo?`<img src="${s.photo}" alt="${esc(s.title)}" onerror="this.remove()">`:''}
+ <div class="slide-ico">${s.ico}</div><div class="photo-wash"></div><span class="photo-label">STEP ${n} OF 6</span>
+ <div class="photo-caption"><div><h3>${s.title}</h3><p>${s.text}</p></div><span class="caption-number">${n}/6</span></div></div>
+ <div class="slide-controls">${SLIDES.map((_,i)=>`<button class="${i===UI.slide?'selected':''}" data-act="slide" data-i="${i}" aria-label="Step ${i+1}"></button>`).join('')}</div>
+ <div class="journey-chips">${SLIDES.map((x,i)=>`<span class="${i<=UI.slide?'on':''}">${x.title}</span>`).join('')}</div>`;
+}
+function paintSlide(){const e=$('#hero-visual');if(e)e.innerHTML=slideHTML()}
+function startSlides(){slideTimer=setInterval(()=>{UI.slide=(UI.slide+1)%SLIDES.length;paintSlide()},4500)}
+function pageHome(){
+ return`<section class="hero"><div><p class="eyebrow">AI-POWERED CARE NAVIGATOR</p><h1>${t('hero_1')} <span>${t('hero_2')}</span></h1><p class="hero-description">${t('hero_desc')}</p>
+ <div class="hero-actions"><a class="btn btn-primary btn-large" href="#/patient">${t('patient_portal')} →</a><a class="btn btn-dark btn-large" href="#/admin">${t('hospital_admin')}</a></div>
+ <div class="hero-points"><div>Barrier-aware support</div><div>Staff-approved messages</div><div>Closed-loop tracking</div></div></div>
+ <div class="hero-visual" id="hero-visual">${slideHTML()}</div></section>
+ <div class="strip"><div class="strip-item"><i>📵</i><div><strong>Shared phones</strong><small>Handled, not ignored</small></div></div><div class="strip-item"><i>📍</i><div><strong>Distance & GPS</strong><small>Travel plan with ETA</small></div></div><div class="strip-item"><i>🗣️</i><div><strong>3 languages</strong><small>English · हिन्दी · ਪੰਜਾਬੀ</small></div></div><div class="strip-item"><i>🧑‍⚕️</i><div><strong>Human in loop</strong><small>Staff approve every plan</small></div></div></div>
+ <section class="section portals"><div class="section-heading"><h2>Choose your portal</h2><p>Patients see their follow-ups and travel options. Hospital teams see who needs help, and why.</p></div>
+ <div class="portal-grid"><div class="portal-card patient"><span class="portal-kicker">FOR PATIENTS</span><h3>${t('patient_portal')}</h3><p>Log in with your registered mobile number to see what is due and how to reach the hospital.</p><ul><li>Follow-ups, due dates and what to bring</li><li>Distance from the hospital and GPS-based travel time</li><li>Ride and ambulance options with estimated cost</li><li>Ask for a new date, a wheelchair or a callback</li></ul><a class="btn btn-primary" href="#/patient">${t('patient_portal')}</a></div>
+ <div class="portal-card"><span class="portal-kicker">FOR HOSPITAL TEAMS</span><h3>${t('hospital_admin')}</h3><p>Role-based access for everyone who touches a follow-up.</p><ul><li>Doctor – plans, clinical notes, approvals</li><li>Staff – Nurse, Clinician, Ward Boy, Pharmacist</li><li>Explainable risk flags with suggested next steps</li><li>Contact log and verified outcomes</li></ul><a class="btn btn-dark" href="#/admin">${t('hospital_admin')}</a></div></div></section>
+ <section class="section"><div class="support-band" style="margin:0"><div><h2>Emergency? Do not wait for a follow-up.</h2><p>${t('emergency')}</p></div><div class="support-actions"><a class="btn btn-white" href="tel:108">Call 108</a><a class="btn btn-outline-white" href="tel:112">Call 112</a></div></div></section>`;
+}
+
+/* ================= INFO PAGES ================= */
+function pageProblem(){
+ const R=[['Lack of perceived illness',24.8],['Distance / travel',22.2],['Lack of guidance / reminders',15.2],['Acute illness / disability',8.2],['Long waiting time',7.0]];
+ return`<div class="page"><h1>Missed follow-ups: a hidden gap in patient care</h1><p class="lead">Patients may leave a busy hospital with instructions that are unclear or difficult to follow, while practical barriers and imperfect records make unresolved follow-up hard for staff to identify.</p>
+ <div class="grid g2"><div class="card"><div class="big-stat">900</div><p>outpatient visits daily at a typical district hospital (case scenario)</p></div><div class="card"><div class="big-stat">28%</div><p>of patients marked for follow-up do not return within the recommended period (case scenario)</p></div></div>
+ <div class="card" style="margin-top:16px"><h3>Reported reasons for missed visits</h3><p style="margin-bottom:10px">Source: Das et al., 2021 – Punjab study (hypertension patients)</p>${R.map(r=>`<div class="bar-row"><span>${r[0]}</span><div class="bar"><i style="width:${r[1]/30*100}%"></i></div><b>${r[1]}%</b></div>`).join('')}</div>
+ <div class="grid g3" style="margin-top:16px"><div class="card"><h3>Access barriers</h3><p>Distance, disability, acute illness and long waiting time make follow-up difficult.</p></div><div class="card"><h3>Communication gaps</h3><p>Patients may lack clear guidance, reminders, or understanding of why follow-up matters.</p></div><div class="card"><h3>Incomplete records</h3><p>A missing hospital record does not always mean the patient missed care — they may have been treated elsewhere.</p></div></div>
+ <div class="grid g4" style="margin-top:16px">${[['Missed follow-ups','Patients often fail to return on time.'],['Hidden barriers','Cost, distance, fear and confusion go unnoticed.'],['Late danger detection','Hospitals discover delays only after they occur.'],['One-size-fits-all reminders','Generic messages fail to address personal barriers.']].map(x=>`<div class="card"><h3>${x[0]}</h3><p>${x[1]}</p></div>`).join('')}</div>
+ <div class="insight">KEY INSIGHT: A missed follow-up can signal an unresolved barrier — not simply a lack of motivation. It is not just about reminding patients; it is about understanding barriers, getting them the right support and verifying the outcome.</div></div>`;
+}
+function pageHow(){
+ const S=[['01','Capture the care plan','Convert clinician-recorded follow-up instructions into structured tasks, timelines and required documents.'],['02','Detect follow-up risks','Identify patient-specific barriers and gaps that may delay follow-up care.'],['03','Personalize the support','AI suggests practical next steps: verify contact details, clarify tasks, or request staff help with coordination.'],['04','Close the follow-up loop','Track contact attempts and outcomes, flag unresolved cases for staff review and keep the care team informed.']];
+ const W=['Patient visit','Data processing','Data validation','Preprocessing','Feature engineering','AI risk flagging (rules + validated ML)','Explanation of the flag','Human review & approval','Personalized navigation & support','Outcome tracking','Monitor & improve'];
+ return`<div class="page"><h1>How AARAMBH works</h1><p class="lead">From the patient visit to a verified outcome — in four steps, with a human reviewing before anything reaches the patient.</p>
+ <div class="grid g4">${S.map(s=>`<div class="card"><div class="num">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('')}</div>
+ <h2 style="margin:34px 0 14px">11-step workflow</h2><div class="grid g4">${W.map((w,i)=>`<div class="card" style="padding:16px"><div class="num" style="width:30px;height:30px;margin-bottom:8px">${i+1}</div><p style="color:#21464d;font-weight:600">${w}</p></div>`).join('')}</div>
+ <div class="safe-note"><b>What makes it different:</b> beyond reminders (finds <i>why</i> a patient may not return) · barrier-aware (shared phones, travel, unclear instructions) · actionable (recommends administrative next steps, not just scores) · closed-loop (records whether the follow-up actually happened).</div>
+ <div class="grid g2" style="margin-top:16px"><a class="btn btn-primary" href="#/patient">Try the Patient Portal</a><a class="btn btn-dark" href="#/admin">Open Hospital Administration</a></div></div>`;
+}
+function pageRoles(){
+ const L=[['Data availability & accuracy','Incomplete or outdated data.'],['Language & communication','Many local languages; risk of misinterpretation.'],['Digital access','Many patients lack smartphones or stable internet.'],['Privacy & security','Sensitive health data must be protected.'],['Human dependency','Staff must monitor and act on alerts.'],['Implementation & adoption','Training, change management and patient trust.']];
+ return`<div class="page"><h1>AI & Humans — different strengths, a shared goal</h1><p class="lead">AI handles data and coordination. Humans provide judgment, empathy and clinical expertise.</p>
+ <div class="grid g2"><div class="card"><h3>🤖 AI — analyse · identify · recommend</h3><ul><li>Detects risks and barriers (missing details, shared phones, travel, unclear instructions)</li><li>Prioritizes high-risk or overdue follow-ups</li><li>Suggests practical next steps</li><li>Tracks outcomes and helps improve the workflow</li></ul></div>
+ <div class="card"><h3>🧑‍⚕️ Humans — empathize · decide · support</h3><ul><li>Validate information and personalize the plan</li><li>Coordinate support with staff, resources and community services</li><li>Make all clinical decisions</li><li>Build trust and encourage patients</li></ul></div></div>
+ <div class="safe-note"><b>Safety first:</b> AI supports coordination and communication — not diagnosis, treatment decisions or emergency advice. Risk flags show <i>administrative</i> follow-up risk, not clinical urgency, and always list why they were raised.</div>
+ <h2 style="margin:30px 0 14px">Limitations & mitigation</h2><div class="grid g3">${L.map(l=>`<div class="card"><h3>${l[0]}</h3><p>${l[1]}</p></div>`).join('')}</div>
+ <div class="warn-note"><b>Mitigation:</b> reliable data validation, multilingual communication, accessible technology (voice / SMS for non-smartphone users), effective training, reduced human dependency through prioritised queues, and robust data security.</div></div>`;
+}
+function pageRoadmap(){
+ const R=[['Pilot & validate','0–3 months','Test in a selected district clinic, collect user feedback, refine workflow'],['AI-powered enhancements','3–6 months','Risk prediction, personalised messages, smart reminders'],['Multi-channel access','6–9 months','IVR / voice calls, SMS / WhatsApp / app, low-data mode'],['Ecosystem integration','9–12 months','Hospital information system, pharmacy & lab partners, transport'],['User expansion','9–12 months','Caregivers & families, health-worker communication, chronic care'],['Advanced analytics','12–18 months','Predict no-shows, identify barriers, improve resource allocation'],['Measure impact','18–24 months','Completion rates, satisfaction, health outcomes'],['Scale & sustain','24+ months','More districts, continuous monitoring, long-term sustainability']];
+ const I=[['Follow-up completion','↑ 30–50%'],['Time management','↑ 20–40%'],['Missed appointments','↓ 25–40%'],['Patient satisfaction','↑ 40–60%'],['Staff workload','↓ 30–50%'],['Health outcomes','↑ 15–30%']];
+ return`<div class="page"><h1>Roadmap & expected impact</h1><p class="lead">From pilot to scale — step by step.</p><div class="tl">${R.map((r,i)=>`<div class="card"><b>${r[1]}</b><h3>${i+1}. ${r[0]}</h3><p>${r[2]}</p></div>`).join('')}</div>
+ <h2 style="margin:30px 0 14px">Expected impact</h2><div class="grid g3">${I.map(x=>`<div class="card"><p>${x[0]}</p><div class="big-stat" style="font-size:30px;margin-top:8px">${x[1]}</div></div>`).join('')}</div>
+ <div class="warn-note">These are <b>projected targets</b> to be validated during the pilot — not measured results.</div></div>`;
+}
+
+/* ================= PATIENT PORTAL ================= */
+function pagePatientLogin(){
+ return`<section class="auth-page"><div class="auth-card"><span class="auth-eyebrow">PATIENT PORTAL</span><h1>${t('login_title')}</h1><p class="auth-intro">Use the mobile number registered at the hospital OPD.</p>
+ ${!UI.otp?`<form data-form="p-otp"><label class="field">${t('mobile')}<input name="phone" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" placeholder="10-digit number" required value="${esc(UI.phone)}"></label><button class="btn btn-primary btn-large" style="width:100%">${t('send_otp')}</button></form>`
+ :`<form data-form="p-verify"><div class="safe-note" style="margin:0 0 16px">OTP sent to +91 ${esc(UI.phone)} (demo)</div><label class="field">${t('otp')}<input name="otp" inputmode="numeric" maxlength="6" required autofocus></label><button class="btn btn-primary btn-large" style="width:100%">${t('verify')}</button><p class="auth-intro" style="text-align:center;margin:14px 0 0"><button type="button" class="btn btn-sm btn-outline" data-act="otp-back">Change number</button></p></form>`}
+ <div class="demo-box"><b>Demo only.</b> OTP: ${OTP_DEMO}<br>${DB.patients.map(p=>`${p.phone} – ${esc(p.name)}`).join('<br>')}</div></div></section>`;
+}
+function routePatient(b,c,d){
+ if(!me())return pagePatientLogin();
+ if(!b)return pagePatientHome();
+ if(b==='profile')return pagePatientProfile();
+ if(b==='followup'&&c){const f=fu(c);if(!f||f.pid!==me().id)return notFound();return d?pageFollowupAction(f,d):pageFollowup(f)}
+ if(b==='travel'&&c){const f=fu(c);if(!f||f.pid!==me().id)return notFound();return pageTravel(f)}
+ return notFound();
+}
+function pagePatientHome(){
+ const p=me(),L=DB.followups.filter(f=>f.pid===p.id),open=L.filter(f=>f.status==='pending').sort((a,b)=>a.due.localeCompare(b.due)),done=L.filter(f=>f.status!=='pending'),next=open[0],km=distKm(p);
+ const late=open.some(f=>diffDays(f.due)<0);
+ const card=f=>`<a class="fu-card" href="#/patient/followup/${f.id}"><span class="due-pill ${dueCls(f)}">${dueText(f)}</span><h3>${esc(f.title)}</h3><p style="margin:0;color:#6d8187;font-size:13px">${esc(f.dept)} · ${esc(f.doctor)}</p><div class="pill-row"><span class="pill">📅 ${fmtDate(f.due)}</span><span class="pill">🕘 ${fmtTime(f.time)}</span>${f.confirmed?'<span class="pill" style="background:#e7f5ed;color:#317b59">Visit confirmed</span>':''}</div></a>`;
+ return`<section class="dash"><div class="dash-top"><div><h1>${t('hello')}, ${esc(p.name)}</h1><p>${esc(p.area)} · ${esc(H.name)}</p></div><div class="actions"><a class="btn btn-outline" href="#/patient/profile">${t('profile')}</a><button class="btn btn-outline" data-act="logout">${t('logout')}</button></div></div>
+ ${late?`<div class="alert">⚠️ ${t('overdue_alert')}</div>`:''}
+ <div class="stats"><div class="stat-card"><span>${t('next_followup')}</span><strong style="font-size:20px">${next?fmtDate(next.due):'—'}</strong><small>${next?dueText(next):''}</small></div><div class="stat-card"><span>${t('your_followups')}</span><strong>${open.length}</strong><small>pending</small></div><div class="stat-card"><span>${t('distance')}</span><strong>${km} km</strong><small>approx. road distance from saved address</small></div><div class="stat-card"><span>${t('plan_travel')}</span><strong style="font-size:18px">GPS · Traffic · Rides</strong>${next?`<small><a href="#/patient/travel/${next.id}" style="font-weight:800">Open travel plan →</a></small>`:''}</div></div>
+ <h2 style="margin:0 0 14px">${t('your_followups')}</h2>${open.length?`<div class="grid g2">${open.map(card).join('')}</div>`:'<div class="card empty-state">No pending follow-ups 🎉</div>'}
+ ${done.length?`<h2 style="margin:28px 0 14px">${t('history')}</h2><div class="grid g2">${done.map(card).join('')}</div>`:''}
+ <div class="warn-note">${t('emergency')}</div></section>`;
+}
+function pagePatientProfile(){
+ const p=me();
+ return`<section class="auth-page"><div class="auth-card"><span class="auth-eyebrow">${t('profile').toUpperCase()}</span><h1>${t('profile')}</h1><p class="auth-intro">Correct details help the hospital reach you.</p>
+ <form data-form="p-profile"><label class="field">Registered mobile<input value="${esc(p.phone)}" disabled></label><label class="field">Alternate mobile number (family / neighbour)<input name="alt" inputmode="numeric" maxlength="10" pattern="[0-9]{10}" value="${esc(p.altPhone)}" placeholder="Optional"></label><label class="field">Preferred language<select name="lang"><option value="en"${p.lang==='en'?' selected':''}>English</option><option value="hi"${p.lang==='hi'?' selected':''}>हिन्दी</option><option value="pa"${p.lang==='pa'?' selected':''}>ਪੰਜਾਬੀ</option></select></label><button class="btn btn-primary btn-large" style="width:100%">Save</button></form><p class="auth-intro" style="margin:16px 0 0"><a class="btn btn-sm btn-outline" href="#/patient">${t('back')}</a></p></div></section>`;
+}
+function stepper(f){
+ const st=[['Visit',true],['Due',true],['Barrier found',f.barriers.length>0],['Support offered',f.planApproved],['Reminder',f.contacts.length>0||f.confirmed],['Care completed',f.status==='completed']];
+ return`<div class="journey">${st.map((s,i)=>`<div class="j ${s[1]?'on':''}"><b>${s[1]?'✓':i+1}</b><span>${s[0]}</span></div>`).join('')}</div>`;
+}
+function pageFollowup(f){
+ const msg=`Hospital follow-up: ${f.title} at ${H.name} on ${fmtDate(f.due)}, ${fmtTime(f.time)} (${f.dept}). Please help me reach on time.`;
+ return`<div class="page"><a class="btn btn-sm btn-outline" href="#/patient">← ${t('back')}</a><h1 style="margin-top:16px">${esc(f.title)}</h1><span class="due-pill ${dueCls(f)}">${dueText(f)}</span>${stepper(f)}
+ <div class="two"><div class="card"><h3>Appointment</h3><div class="kv"><b>${t('date')}</b><span>${fmtDate(f.due)}</span><b>${t('time')}</b><span>${fmtTime(f.time)}</span><b>${t('dept')}</b><span>${esc(f.dept)}</span><b>${t('doctor')}</b><span>${esc(f.doctor)}</span><b>Hospital</b><span>${esc(H.name)}, ${esc(H.city)}</span></div>
+  <h3 style="margin-top:20px">${t('instructions')}</h3><p style="color:#35575e">${esc(f.instructions)}</p>
+  ${f.docs.length?`<h3 style="margin-top:20px">${t('docs')}</h3>${f.docs.map((d,i)=>`<label class="check"><input type="checkbox" data-change="doc" data-id="${f.id}" data-i="${i}" ${f.docsReady.includes(i)?'checked':''}>${esc(d)}</label>`).join('')}`:''}
+  ${f.reschedReq?`<div class="warn-note">Reschedule requested for ${fmtDate(f.reschedReq.date)} — waiting for hospital staff to confirm.</div>`:''}</div>
+ <div class="card"><h3>What would you like to do?</h3><div class="grid" style="margin-top:12px">
+  ${f.status==='pending'?`<button class="btn btn-primary" data-act="p-confirm" data-id="${f.id}" ${f.confirmed?'disabled':''}>${f.confirmed?'✓ Visit confirmed':t('confirm')}</button>
+  <a class="btn btn-outline" href="#/patient/travel/${f.id}">📍 ${t('plan_travel')}</a>
+  <a class="btn btn-outline" href="#/patient/followup/${f.id}/reschedule">${t('reschedule')}</a>
+  <a class="btn btn-outline" href="#/patient/followup/${f.id}/barrier">${t('barrier')}</a>
+  <a class="btn btn-outline" href="#/patient/followup/${f.id}/assist">${t('assist')}</a>`:`<p style="color:#6d8187;font-size:13px">Outcome: ${esc(f.outcome||'')}</p>`}
+  <a class="btn btn-outline" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(msg)}">Share with family on WhatsApp</a></div>
+  <div class="warn-note" style="margin-top:16px">${t('emergency')}</div></div></div></div>`;
+}
+function pageFollowupAction(f,kind){
+ const back=`<p class="auth-intro" style="margin:16px 0 0"><a class="btn btn-sm btn-outline" href="#/patient/followup/${f.id}">${t('back')}</a></p>`;
+ if(kind==='reschedule')return`<section class="auth-page"><div class="auth-card"><span class="auth-eyebrow">RESCHEDULE</span><h1>${t('reschedule')}</h1><p class="auth-intro">${esc(f.title)} — currently ${fmtDate(f.due)}. Staff will confirm the new date with you.</p><form data-form="p-resched" data-id="${f.id}"><label class="field">Preferred new date<input type="date" name="date" min="${plusDays(1)}" required></label><label class="field">Reason<select name="reason"><option>Cannot travel on that day</option><option>No one to accompany me</option><option>Not feeling well enough to travel</option><option>Other</option></select></label><button class="btn btn-primary btn-large" style="width:100%">Send request</button></form>${back}</div></section>`;
+ if(kind==='barrier')return`<section class="auth-page"><div class="auth-card"><span class="auth-eyebrow">TELL US WHAT IS STOPPING YOU</span><h1>${t('barrier')}</h1><p class="auth-intro">This helps the hospital offer the right support. It is not a medical report.</p><form data-form="p-barrier" data-id="${f.id}">${BARRIERS.filter(b=>b!=='Needs escort / wheelchair').map(b=>`<label class="check"><input type="checkbox" name="b" value="${b}">${b}</label>`).join('')}<label class="field">Anything else (optional)<textarea name="note" rows="2"></textarea></label><button class="btn btn-primary btn-large" style="width:100%">Send to hospital team</button></form>${back}</div></section>`;
+ if(kind==='assist')return`<section class="auth-page"><div class="auth-card"><span class="auth-eyebrow">HELP AT HOSPITAL</span><h1>${t('assist')}</h1><p class="auth-intro">Our ward staff will be ready when you arrive on ${fmtDate(f.due)}.</p><form data-form="p-assist" data-id="${f.id}"><label class="check"><input type="checkbox" name="a" value="wheel">Wheelchair + escort at arrival</label><label class="check"><input type="checkbox" name="a" value="lang">Someone who speaks my language</label><label class="check"><input type="checkbox" name="a" value="call">Please call me back</label><button class="btn btn-primary btn-large" style="width:100%">Request help</button></form>${back}</div></section>`;
+ return notFound();
+}
+
+/* ---- Travel: GPS, traffic, rides, ambulance ---- */
+function traffic(h){if((h>=8&&h<11)||(h>=17&&h<20))return{label:'Heavy',mult:1.6,cls:'high'};if((h>=7&&h<8)||(h>=11&&h<17)||(h>=20&&h<21))return{label:'Moderate',mult:1.25,cls:'medium'};return{label:'Light',mult:1,cls:'low'}}
+const RIDES=[
+ {k:'bike',name:'Rapido Bike taxi',icon:'🏍️',base:20,perKm:8,note:'1 person · quickest in traffic · not for patients who cannot sit upright'},
+ {k:'auto',name:'Rapido Auto',icon:'🛺',base:30,perKm:13,note:'Up to 3 · patient + attendant'},
+ {k:'cab',name:'Rapido Cab',icon:'🚕',base:60,perKm:16,note:'Up to 4 · comfortable for elderly patients'},
+ {k:'amb',name:'Private ambulance (non-emergency transfer)',icon:'🚑',base:700,perKm:25,note:'Stretcher / wheelchair access · availability through partner operator, 24×7'}];
+function pageTravel(f){
+ const p=me(),o=GEO?{lat:GEO.lat,lng:GEO.lng,label:'Your live GPS location'+(GEO.acc?' (±'+GEO.acc+' m)':'')}:{lat:p.lat,lng:p.lng,label:'Saved address – '+p.area};
+ const km=roadKm(o.lat,o.lng),now=traffic(new Date().getHours()),apt=traffic(parseInt(f.time)),eta=m=>Math.max(5,Math.round(km/30*60*m));
+ const apMin=parseInt(f.time)*60+parseInt(f.time.split(':')[1]),leave=apMin-eta(apt.mult)-30;
+ const fare=r=>{const e=(r.base+r.perKm*km)*(1+(now.mult-1)*.2)*(UI.round?2:1);return'₹'+Math.round(e*.9/5)*5+' – ₹'+Math.round(e*1.15/5)*5};
+ const gm=`https://www.google.com/maps/dir/?api=1&origin=${o.lat},${o.lng}&destination=${H.lat},${H.lng}&travelmode=driving`;
+ const emb=`https://maps.google.com/maps?saddr=${o.lat},${o.lng}&daddr=${H.lat},${H.lng}&output=embed`;
+ return`<div class="page"><a class="btn btn-sm btn-outline" href="#/patient/followup/${f.id}">← ${t('back')}</a><h1 style="margin-top:16px">${t('plan_travel')}</h1><p class="lead">${esc(f.title)} · ${fmtDate(f.due)}, ${fmtTime(f.time)} · ${esc(H.name)}</p>
+ <div class="stats"><div class="stat-card"><span>${t('distance')}</span><strong>${km} km</strong><small>approx. by road</small></div><div class="stat-card"><span>Travel time now</span><strong>${eta(now.mult)} min</strong><small>${now.label} traffic (estimate)</small></div><div class="stat-card"><span>Traffic at appointment time</span><strong><span class="risk ${apt.cls}">${apt.label}</span></strong><small>typical daily pattern</small></div><div class="stat-card"><span>Suggested leave-by</span><strong style="font-size:22px">${fmtMin(leave)}</strong><small>includes 30 min for registration</small></div></div>
+ <div class="two"><div class="card"><h3>📍 Route from your location</h3><p style="margin-bottom:12px">Starting point: <b>${esc(o.label)}</b></p><div class="actions" style="margin-bottom:14px"><button class="btn btn-primary" data-act="gps">${UI.geoMsg||'Connect to my GPS'}</button><a class="btn btn-outline" target="_blank" rel="noopener" href="${gm}">Open live traffic in Google Maps ↗</a></div><iframe class="map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="${emb}" title="Route to hospital"></iframe><p style="margin-top:10px;font-size:11.5px;color:#8a9a9e">Traffic level above is an estimate from time of day. Tap “Open live traffic” for real-time traffic and exact ETA from Google Maps.</p></div>
+ <div class="card"><h3>🚑 Emergency</h3><p style="margin-bottom:12px">For an emergency, do not wait for a ride app. Call the free government ambulance.</p><div class="actions"><a class="btn btn-danger" href="tel:108">Call 108</a><a class="btn btn-outline" href="tel:112">Call 112</a></div><div class="warn-note">This portal gives travel help only — no medical advice.</div></div></div>
+ <div class="card" style="margin-top:20px"><div class="case-head" style="padding:0 0 14px;border:0"><h3>Rides & ambulance — estimated cost to ${esc(H.name)}</h3><label class="check" style="margin:0"><input type="checkbox" data-change="round" ${UI.round?'checked':''}>Include return trip</label></div>
+ ${RIDES.map(r=>`<div class="ride"><i>${r.icon}</i><div><b>${r.name}</b><small>${r.note}</small></div><div><span class="fare">${fare(r)}</span><small style="display:block">~${Math.round(eta(now.mult)*(r.k==='bike'?.8:1))} min · estimate</small></div><div class="actions"><a class="btn btn-sm btn-primary" target="_blank" rel="noopener" href="https://www.rapido.bike/">${r.k==='amb'?'Find ambulance':'Open Rapido'}</a><button class="btn btn-sm btn-outline" data-act="req-transport" data-id="${f.id}" data-ride="${r.name}">Ask hospital to arrange</button></div></div>`).join('')}
+ <p style="margin-top:12px;font-size:11.5px;color:#8a9a9e">Fares are estimates (base + per-km, adjusted for traffic). The final fare is shown by the ride provider. Government ambulance 108 is free for emergencies.</p></div></div>`;
+}
+
+/* ================= HOSPITAL ADMINISTRATION ================= */
+function pageRolePicker(){
+ const groups=['Doctor','Staff','Administration'];
+ return`<div class="page"><h1>${t('hospital_admin')}</h1><p class="lead">Choose your role to continue. Each role sees only what it needs.</p>
+ ${groups.map(g=>`<h3 style="margin:22px 0 12px">${g}</h3><div class="grid g3">${Object.entries(ROLES).filter(([k,r])=>r.group===g).map(([k,r])=>`<a class="fu-card" href="#/admin/login/${k}"><div style="font-size:30px;margin-bottom:10px">${r.icon}</div><h3>${r.label}</h3><p style="margin:0;color:#6d8187;font-size:12.5px;line-height:1.7">${r.desc}</p></a>`).join('')}</div>`).join('')}</div>`;
+}
+function pageStaffLogin(role){
+ const r=ROLES[role],ex=STAFF.filter(s=>s.role===role);
+ return`<section class="auth-page"><div class="auth-card"><span class="auth-eyebrow">${r.label.toUpperCase()}</span><h1>${r.icon} ${t('login')}</h1><p class="auth-intro">${r.desc}</p>
+ <form data-form="s-login" data-role="${role}"><label class="field">${t('staff_id')}<input name="id" required autocomplete="username"></label><label class="field">${t('password')}<input type="password" name="pw" required autocomplete="current-password"></label><button class="btn btn-primary btn-large" style="width:100%">${t('login')}</button></form>
+ <div class="demo-box"><b>Demo credentials</b><br>${ex.map(s=>`${s.id} / ${s.pw} – ${esc(s.name)}`).join('<br>')}</div><p class="auth-intro" style="margin:16px 0 0"><a class="btn btn-sm btn-outline" href="#/admin">${t('back')}</a></p></div></section>`;
+}
+function routeAdmin(b,c){
+ const u=staff();
+ if(!u){if(b==='login'&&c&&ROLES[c])return pageStaffLogin(c);return pageRolePicker()}
+ if(!b)return pageDash(u);
+ if(b==='case'&&c)return pageCase(u,c);
+ if(b==='new'&&['doctor','clinician'].includes(u.role))return pageNewPlan(u);
+ return notFound();
+}
+const stat=(l,v,s)=>`<div class="stat-card"><span>${l}</span><strong>${v}</strong><small>${s||''}</small></div>`;
+function dashTop(u){
+ return`<div class="dash-top"><div><h1>${ROLES[u.role].icon} ${esc(u.name)}</h1><p>${ROLES[u.role].label} · ${esc(u.dept)} · ${esc(H.name)}</p></div><div class="actions"><span class="demo-tag">DEMO DATA</span>${['doctor','clinician'].includes(u.role)?'<a class="btn btn-primary" href="#/admin/new">+ New follow-up plan</a>':''}<button class="btn btn-outline" data-act="logout">${t('logout')}</button></div></div>`;
+}
+function caseTable(rows,title){
+ if(!rows.length)return'<div class="case-card"><div class="empty-state">No follow-ups to show.</div></div>';
+ return`<div class="case-card"><div class="case-head"><h3>${title||'Follow-up cases'}</h3><div class="filters"><input data-filter="q" placeholder="Search patient, department…"><select data-filter="r"><option value="">All risk</option><option value="high">High</option><option value="medium">Medium</option><option value="low">Low</option></select><select data-filter="s"><option value="">All status</option>${['Overdue','Due today','Upcoming','Confirmed','Reschedule requested','Completed','Closed'].map(s=>`<option>${s}</option>`).join('')}</select></div></div>
+ <div class="table-wrap"><table id="cases"><thead><tr><th>Patient</th><th>Follow-up</th><th>Due</th><th>Distance</th><th>Risk (administrative)</th><th>Status</th><th>Last contact</th><th></th></tr></thead><tbody>
+ ${rows.map(({f,p,r,st})=>{const lc=f.contacts.slice(-1)[0];return`<tr data-q="${esc((p.name+' '+f.title+' '+f.dept+' '+p.area).toLowerCase())}" data-r="${r.level}" data-s="${st.label}"><td><b>${esc(p.name)}</b><span class="sub">${p.age} yrs · ${esc(p.area)}</span></td><td>${esc(f.title)}<span class="sub">${esc(f.dept)} · ${esc(f.doctor)}</span></td><td>${fmtDate(f.due)}<span class="sub">${dueText(f)}</span></td><td>${distKm(p)} km</td><td>${f.status==='pending'?`<span class="risk ${r.level}">${r.level.toUpperCase()} · ${r.score}</span>`:'—'}</td><td><span class="status ${st.cls}">${st.label}</span></td><td>${lc?esc(lc.result)+`<span class="sub">${fmtDate(lc.date)}</span>`:'<span class="sub">No attempt yet</span>'}</td><td><a class="btn btn-sm btn-outline" href="#/admin/case/${f.id}">Open</a></td></tr>`}).join('')}</tbody></table></div></div>`;
+}
+function applyFilters(){
+ const q=($('[data-filter=q]')||{}).value||'',r=($('[data-filter=r]')||{}).value||'',s=($('[data-filter=s]')||{}).value||'';
+ document.querySelectorAll('#cases tbody tr').forEach(tr=>{tr.hidden=!((!q||tr.dataset.q.includes(q.toLowerCase()))&&(!r||tr.dataset.r===r)&&(!s||tr.dataset.s===s))});
+}
+function pageDash(u){
+ const all=cases(),open=all.filter(c=>c.f.status==='pending');let inner='';
+ const stats=(rows)=>{const o=rows.filter(c=>c.f.status==='pending');return`<div class="stats">${stat('Open follow-ups',o.length,'pending')}${stat('Overdue',o.filter(c=>c.d<0).length,'need action today')}${stat('High risk',o.filter(c=>c.r.level==='high').length,'administrative risk')}${stat('Awaiting plan approval',o.filter(c=>!c.f.planApproved).length,'staff review')}</div>`};
+ if(u.role==='doctor'){const mine=all.filter(c=>c.f.doctor===u.name);inner=stats(mine)+caseTable(mine,'My patients’ follow-ups')}
+ else if(u.role==='nurse'){const list=open.filter(c=>c.r.level!=='low'||c.d<=2||c.f.callback);inner=stats(all)+`<div class="warn-note" style="margin:0 0 18px">Priority call list — ${list.length} patient(s). Patient callback requests: ${open.filter(c=>c.f.callback).length}.</div>`+caseTable(list,'Priority call list')}
+ else if(u.role==='clinician'){inner=stats(all)+caseTable(open.filter(c=>!c.f.planApproved).concat(open.filter(c=>c.f.planApproved)),'Follow-up desk – awaiting approval first')}
+ else if(u.role==='ward')inner=wardView(all);
+ else if(u.role==='pharmacist')inner=pharmView();
+ else{
+  const att=DB.followups.flatMap(f=>f.contacts).filter(c=>c.by!=='Patient (portal)'),ok=att.filter(c=>/^(Answered|SMS delivered|WhatsApp)/.test(c.result)).length;
+  const done=DB.followups.filter(f=>f.status==='completed').length,bc={};open.forEach(c=>c.f.barriers.forEach(b=>bc[b]=(bc[b]||0)+1));const mx=Math.max(1,...Object.values(bc));
+  inner=`<div class="stats">${stat('Open follow-ups',open.length,'pending')}${stat('Overdue',open.filter(c=>c.d<0).length,'need action')}${stat('High risk',open.filter(c=>c.r.level==='high').length,'administrative')}${stat('Contact success',att.length?Math.round(ok/att.length*100)+'%':'—',att.length+' attempts logged')}</div>
+  <div class="grid g2" style="margin-bottom:22px"><div class="card"><h3>Barriers among open cases</h3>${Object.keys(bc).length?Object.entries(bc).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="bar-row" style="grid-template-columns:170px 1fr 30px"><span>${k}</span><div class="bar"><i style="width:${v/mx*100}%"></i></div><b>${v}</b></div>`).join(''):'<p>No barriers recorded.</p>'}</div>
+  <div class="card"><h3>Workload & outcomes</h3><div class="kv"><b>Completed visits</b><span>${done}</span><b>Open ward tasks</b><span>${DB.tasks.filter(t=>t.status==='open').length}</span><b>Medicines to dispense</b><span>${DB.rx.filter(r=>r.status==='pending').length}</span><b>Callback requests</b><span>${open.filter(c=>c.f.callback).length}</span></div><p style="margin-top:12px;font-size:11.5px">Risk flags are for administrative prioritisation, not clinical urgency.</p></div></div>`+caseTable(all)}
+ return`<section class="dash">${dashTop(u)}${inner}<div class="warn-note">AI suggests; staff decide. Risk scores reflect follow-up completion risk — not clinical urgency.</div></section>`;
+}
+function wardView(all){
+ const tasks=DB.tasks,arr=all.filter(c=>c.f.status==='pending'&&(c.d===0||(c.f.confirmed&&c.d<=1)));
+ return`<div class="stats">${stat('Open tasks',tasks.filter(t=>t.status==='open').length,'assistance')}${stat('Completed today',tasks.filter(t=>t.status==='done').length,'')}${stat('Expected today',arr.length,'patients')}${stat('Wheelchair requests',tasks.filter(t=>t.status==='open'&&/Wheelchair/.test(t.type)).length,'')}</div>
+ <div class="case-card"><div class="case-head"><h3>Assistance tasks</h3></div><div class="table-wrap"><table><thead><tr><th>Patient</th><th>Task</th><th>From → To</th><th>When</th><th>Source</th><th>Status</th><th></th></tr></thead><tbody>${tasks.map(k=>{const p=pt(k.pid);return`<tr><td><b>${esc(p.name)}</b><span class="sub">${p.age} yrs · speaks ${{en:'English',hi:'Hindi',pa:'Punjabi'}[p.lang]}</span></td><td>${esc(k.type)}</td><td>${esc(k.from)} → ${esc(k.to)}</td><td>${esc(k.when)}</td><td>${esc(k.source)}</td><td><span class="status ${k.status==='done'?'Completed':''}">${k.status==='done'?'Done':'Open'}</span></td><td>${k.status==='open'?`<button class="btn btn-sm btn-primary" data-act="task-done" data-id="${k.id}">Mark done</button>`:''}</td></tr>`}).join('')}</tbody></table></div></div>`;
+}
+function pharmView(){
+ const R=DB.rx;
+ return`<div class="stats">${stat('To prepare',R.filter(r=>r.status==='pending').length,'for upcoming visits')}${stat('Dispensed',R.filter(r=>r.status==='dispensed').length,'')}${stat('Due within 3 days',R.filter(r=>r.status==='pending'&&diffDays(fu(r.fid).due)<=3).length,'prepare first')}${stat('Overdue visits',R.filter(r=>r.status==='pending'&&diffDays(fu(r.fid).due)<0).length,'patient may still collect')}</div>
+ <div class="case-card"><div class="case-head"><h3>Medicines for follow-up visits (as prescribed by doctor)</h3></div><div class="table-wrap"><table><thead><tr><th>Patient</th><th>Visit</th><th>Items</th><th>Status</th><th></th></tr></thead><tbody>${R.map(r=>{const p=pt(r.pid),f=fu(r.fid);return`<tr><td><b>${esc(p.name)}</b><span class="sub">${esc(f.dept)}</span></td><td>${fmtDate(f.due)}<span class="sub">${dueText(f)}</span></td><td>${r.items.map(esc).join('<br>')}</td><td><span class="status ${r.status==='dispensed'?'Completed':''}">${r.status==='dispensed'?'Dispensed':'To prepare'}</span></td><td>${r.status==='pending'?`<button class="btn btn-sm btn-primary" data-act="rx-done" data-id="${r.id}">Mark dispensed</button>`:''}</td></tr>`}).join('')}</tbody></table></div></div>`;
+}
+function pageCase(u,id){
+ if(['ward','pharmacist'].includes(u.role))return deny();
+ const f=fu(id);if(!f)return notFound();
+ const p=pt(f.pid),r=riskOf(f),st=statusOf(f),open=f.status==='pending',isDoc=u.role==='doctor',canAct=u.role!=='admin';
+ return`<section class="dash"><a class="btn btn-sm btn-outline" href="#/admin">← Dashboard</a>
+ <div class="dash-top" style="margin-top:16px"><div><h1>${esc(p.name)} — ${esc(f.title)}</h1><p>${esc(f.dept)} · ${esc(f.doctor)} · Due ${fmtDate(f.due)}, ${fmtTime(f.time)}</p></div><div class="actions"><span class="status ${st.cls}">${st.label}</span>${open?`<span class="risk ${r.level}">${r.level.toUpperCase()} · ${r.score}</span>`:''}</div></div>
+ <div class="card" style="margin-bottom:20px"><h3>Care journey</h3>${stepper(f)}</div>
+ <div class="two"><div>
+  <div class="card" style="margin-bottom:20px"><h3>Patient & plan</h3><div class="kv"><b>Patient</b><span>${esc(p.name)}, ${p.age} yrs</span><b>Phone</b><span>${esc(p.phone)}${p.sharedPhone?' <span class="pill">Shared phone</span>':''}${p.altPhone?' · Alt: '+esc(p.altPhone):''}</span><b>Language</b><span>${{en:'English',hi:'Hindi',pa:'Punjabi'}[p.lang]}</span><b>Area / distance</b><span>${esc(p.area)} · ${distKm(p)} km</span><b>Earlier missed</b><span>${p.missedBefore}</span><b>Instructions</b><span>${esc(f.instructions)}</span><b>Documents</b><span>${f.docs.map(esc).join(', ')||'—'}</span><b>Barriers</b><span>${f.barriers.length?f.barriers.map(b=>`<span class="pill">${esc(b)}</span>`).join(' '):'None recorded'}</span><b>Plan approval</b><span>${f.planApproved?'✓ Approved by '+esc(f.planApprovedBy):'Pending staff approval'}</span>${f.callback?'<b>Callback</b><span>Patient asked for a callback</span>':''}${f.note?'<b>Doctor note</b><span>'+esc(f.note)+'</span>':''}</div></div>
+  ${f.reschedReq?`<div class="card" style="margin-bottom:20px"><h3>Reschedule request</h3><p>Patient asked for <b>${fmtDate(f.reschedReq.date)}</b> — ${esc(f.reschedReq.reason)}</p>${canAct?`<div class="actions" style="margin-top:12px"><button class="btn btn-primary btn-sm" data-act="resched-ok" data-id="${f.id}">Approve new date</button><button class="btn btn-outline btn-sm" data-act="resched-no" data-id="${f.id}">Decline</button></div>`:''}</div>`:''}
+  <div class="card"><h3>Contact log</h3><div class="log" style="margin-top:14px">${f.contacts.length?f.contacts.map(c=>`<div><b>${esc(c.mode)} – ${esc(c.result)}</b>${c.note?'<br>'+esc(c.note):''}<small>${fmtDate(c.date)} · ${esc(c.by)}</small></div>`).join(''):'<div>No contact attempts yet.</div>'}</div>
+  ${open&&canAct?`<form data-form="c-contact" data-id="${f.id}"><div class="grid g2"><label class="field">Mode<select name="mode"><option>Call</option><option>SMS</option><option>WhatsApp</option><option>Home / ASHA visit</option></select></label><label class="field">Result<select name="result">${CONTACT_RESULTS.map(x=>`<option>${x}</option>`).join('')}</select></label></div><label class="field">Note<input name="note" placeholder="Optional"></label><button class="btn btn-primary btn-sm">Add to log</button></form>`:''}</div>
+ </div><div>
+  <div class="card" style="margin-bottom:20px"><h3>Why this was flagged</h3>${open?(r.reasons.length?r.reasons.map(x=>`<div class="reason">${esc(x)}</div>`).join(''):'<p>No risk factors found.</p>'):'<p>Follow-up closed.</p>'}<p style="margin-top:8px;font-size:11px">Transparent rules · administrative risk, not clinical urgency.</p></div>
+  ${open?`<div class="card" style="margin-bottom:20px"><h3>Suggested next steps (staff decide)</h3>${r.actions.length?r.actions.map(x=>`<div class="action-i">${esc(x)}</div>`).join(''):'<p>No action suggested.</p>'}${canAct&&!f.planApproved?`<button class="btn btn-primary" style="width:100%;margin-top:8px" data-act="approve-plan" data-id="${f.id}">Approve navigation plan</button>`:''}</div>`:''}
+  ${isDoc?`<div class="card" style="margin-bottom:20px"><h3>Doctor note</h3><form data-form="c-note" data-id="${f.id}"><label class="field"><textarea name="note" rows="3">${esc(f.note)}</textarea></label><button class="btn btn-dark btn-sm">Save note</button></form></div>`:''}
+  ${open&&canAct?`<div class="card"><h3>Record verified outcome</h3><form data-form="c-outcome" data-id="${f.id}" style="margin-top:12px"><label class="field"><select name="o"><option value="attended">Attended at this hospital</option><option value="elsewhere">Received care elsewhere (verified)</option><option value="cancelled">Cancelled by doctor</option><option value="escalate">Not reachable – escalate</option></select></label><button class="btn btn-dark btn-sm">Save outcome</button></form></div>`:''}
+ </div></div></section>`;
+}
+function pageNewPlan(u){
+ return`<section class="auth-page"><div class="auth-card" style="max-width:560px"><span class="auth-eyebrow">CARE PLAN</span><h1>New follow-up plan</h1><p class="auth-intro">Converts the clinician’s instruction into a tracked task with documents and medicines.</p>
+ <form data-form="c-new"><label class="field">Patient<select name="pid">${DB.patients.map(p=>`<option value="${p.id}">${esc(p.name)} – ${esc(p.area)}</option>`).join('')}</select></label><label class="field">Follow-up title<input name="title" required placeholder="e.g. BP review"></label><div class="grid g2"><label class="field">Department<input name="dept" required value="${esc(u.role==='doctor'?u.dept:'')}"></label><label class="field">Doctor<input name="doctor" required value="${esc(u.role==='doctor'?u.name:'')}"></label></div><div class="grid g2"><label class="field">Due date<input type="date" name="due" min="${plusDays(0)}" required></label><label class="field">Time<input type="time" name="time" value="10:00" required></label></div><label class="field">Instructions (plain language)<textarea name="ins" rows="3" required></textarea></label><label class="field">Documents to bring (comma separated)<input name="docs"></label><label class="field">Medicines for pharmacy (one per line, optional)<textarea name="meds" rows="2"></textarea></label><button class="btn btn-primary btn-large" style="width:100%">Create plan</button></form><p class="auth-intro" style="margin:16px 0 0"><a class="btn btn-sm btn-outline" href="#/admin">${t('back')}</a></p></div></section>`;
+}
+
+/* ================= router + render ================= */
+function render(){
+ clearInterval(slideTimer);
+ const parts=(location.hash||'#/').replace(/^#/,'').split('/').filter(Boolean),[a,b,c,d]=parts;let body;
+ if(!a)body=pageHome();else if(a==='problem')body=pageProblem();else if(a==='how')body=pageHow();else if(a==='roles')body=pageRoles();else if(a==='roadmap')body=pageRoadmap();
+ else if(a==='patient')body=routePatient(b,c,d);else if(a==='admin')body=routeAdmin(b,c,d);else body=notFound();
+ $('#app').innerHTML=announce()+header()+'<main>'+body+'</main>'+footer();
+ if(!a)startSlides();
+ renderChat();
+}
+window.addEventListener('hashchange',()=>{UI.menu=false;render();window.scrollTo(0,0)});
+
+/* ================= chat assistant (rules, no medical advice) ================= */
+function renderChat(){
+ const r=$('#chat-root');
+ if(!UI.chat){r.innerHTML='<button class="chat-launcher" data-act="chat">💬 Help</button>';return}
+ r.innerHTML=`<div class="chat-panel"><div class="chat-head"><div><strong>AARAMBH Assistant</strong><small>Admin & travel help · no medical advice</small></div><button class="modal-close" data-act="chat" aria-label="Close">×</button></div><div class="chat-body" id="chat-body">${UI.msgs.map(m=>`<div class="chat-bubble ${m.u?'chat-user':''}">${esc(m.t)}</div>`).join('')}</div><form class="chat-compose" data-form="chat"><input name="q" placeholder="Ask about login, travel, follow-ups…" autocomplete="off"><button class="btn btn-primary">Send</button></form></div>`;
+ const b=$('#chat-body');b.scrollTop=b.scrollHeight;
+}
+function botReply(q){
+ q=q.toLowerCase();
+ if(/ambulance|emergency|chest|bleed|accident/.test(q))return'If this is an emergency, call 108 (ambulance) or 112 right now. I cannot give medical advice.';
+ if(/rapido|ride|cab|auto|bike|fare|cost/.test(q))return'Open your follow-up → “Plan my travel”. You will see GPS distance, estimated fares for bike, auto, cab and non-emergency ambulance, and a button to open Rapido.';
+ if(/otp|login|password/.test(q))return'Patients: use the registered mobile number and the demo OTP '+OTP_DEMO+'. Staff: choose your role in Hospital Administration and use the demo credentials shown on the login page.';
+ if(/gps|location|traffic|distance/.test(q))return'On the travel page tap “Connect to my GPS”. Allow location access in your browser. Use “Open live traffic” for real-time traffic.';
+ if(/resched|date|change/.test(q))return'Open the follow-up and choose “Ask to reschedule”. Hospital staff will confirm the new date.';
+ if(/wheelchair|escort|help/.test(q))return'Open the follow-up and choose “Ask for help at hospital” to request a wheelchair, escort, language help or a callback.';
+ return'I can help with login, follow-up dates, travel and ride options, and requesting help at the hospital. For medical questions please contact your doctor.';
+}
+
+/* ================= events ================= */
+const handlers={
+ menu(){UI.menu=!UI.menu;render()},
+ slide(el){UI.slide=+el.dataset.i;paintSlide()},
+ chat(){UI.chat=!UI.chat;renderChat()},
+ 'otp-back'(){UI.otp=false;render()},
+ logout(){SESSION=null;store.del(SES_KEY);go('#/')},
+ reset(){if(!confirm('Reset all demo data?'))return;store.del(LS);DB=seed();SESSION=null;store.del(SES_KEY);toast('Demo data reset');go('#/')},
+ 'p-confirm'(el){const f=fu(el.dataset.id);f.confirmed=true;addContact(f,{by:'Patient (portal)',mode:'Portal',result:'Patient confirmed the visit'});save();toast('Thank you! Your visit is confirmed.');render()},
+ gps(){
+  if(!navigator.geolocation){toast('GPS is not supported on this device');return}
+  UI.geoMsg='Locating…';render();
+  navigator.geolocation.getCurrentPosition(pos=>{GEO={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:Math.round(pos.coords.accuracy)};UI.geoMsg='Update my location';render();toast('Location connected')},
+  err=>{UI.geoMsg='';toast('Could not get location ('+(err.code===1?'permission denied':'unavailable')+'). Using saved address.');render()},{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
+ },
+ 'req-transport'(el){const f=fu(el.dataset.id),p=pt(f.pid);addContact(f,{by:'Patient (portal)',mode:'Portal',result:'Requested transport help',note:el.dataset.ride+' to hospital on '+fmtDate(f.due)});f.callback=true;if(!f.barriers.includes('Long distance')&&distKm(p)>20)f.barriers.push('Long distance');save();toast('Request sent. Hospital staff will call you.');},
+ 'approve-plan'(el){const f=fu(el.dataset.id);f.planApproved=true;f.planApprovedBy=staff().name;addContact(f,{by:staff().name,mode:'Review',result:'Navigation plan approved'});save();toast('Plan approved');render()},
+ 'resched-ok'(el){const f=fu(el.dataset.id);addContact(f,{by:staff().name,mode:'Review',result:'Reschedule approved to '+fmtDate(f.reschedReq.date)});f.due=f.reschedReq.date;f.reschedReq=null;f.confirmed=false;save();toast('New date set');render()},
+ 'resched-no'(el){const f=fu(el.dataset.id);addContact(f,{by:staff().name,mode:'Review',result:'Reschedule declined – call patient'});f.reschedReq=null;save();toast('Request declined');render()},
+ 'task-done'(el){DB.tasks.find(x=>x.id===el.dataset.id).status='done';save();toast('Task marked done');render()},
+ 'rx-done'(el){DB.rx.find(x=>x.id===el.dataset.id).status='dispensed';save();toast('Medicines marked dispensed');render()}
+};
+const forms={
+ 'p-otp'(fm){const ph=new FormData(fm).get('phone').trim(),p=DB.patients.find(x=>x.phone===ph);if(!p){toast('This number is not registered. Please contact OPD registration.');return}UI.phone=ph;UI.otp=true;render()},
+ 'p-verify'(fm){if(new FormData(fm).get('otp').trim()!==OTP_DEMO){toast('Incorrect OTP');return}const p=DB.patients.find(x=>x.phone===UI.phone);SESSION={type:'patient',id:p.id};store.set(SES_KEY,SESSION);UI.otp=false;LANG=p.lang;store.set(LANG_KEY,LANG);go('#/patient')},
+ 'p-profile'(fm){const fd=new FormData(fm),p=me();p.altPhone=fd.get('alt').trim();p.lang=fd.get('lang');LANG=p.lang;store.set(LANG_KEY,LANG);save();toast('Details saved');go('#/patient')},
+ 'p-resched'(fm){const f=fu(fm.dataset.id),fd=new FormData(fm);f.reschedReq={date:fd.get('date'),reason:fd.get('reason')};addContact(f,{by:'Patient (portal)',mode:'Portal',result:'Reschedule requested to '+fmtDate(fd.get('date')),note:fd.get('reason')});save();toast('Request sent to the hospital');go('#/patient/followup/'+f.id)},
+ 'p-barrier'(fm){const f=fu(fm.dataset.id),fd=new FormData(fm),v=fd.getAll('b');if(!v.length&&!fd.get('note')){toast('Please select at least one option');return}f.barriers=[...new Set(f.barriers.concat(v))];addContact(f,{by:'Patient (portal)',mode:'Portal',result:'Barrier reported: '+(v.join(', ')||'other'),note:fd.get('note')});save();toast('Thank you. The hospital team will help.');go('#/patient/followup/'+f.id)},
+ 'p-assist'(fm){const f=fu(fm.dataset.id),fd=new FormData(fm),v=fd.getAll('a');if(!v.length){toast('Please select at least one option');return}
+  if(v.includes('wheel')){DB.tasks.push({id:uid('T'),pid:f.pid,fid:f.id,type:'Wheelchair + escort',from:'OPD Registration',to:f.dept,when:'On arrival, '+fmtDate(f.due),status:'open',source:'Patient request'});if(!f.barriers.includes('Needs escort / wheelchair'))f.barriers.push('Needs escort / wheelchair')}
+  if(v.includes('lang')&&!f.barriers.includes('Language support needed'))f.barriers.push('Language support needed');
+  if(v.includes('call'))f.callback=true;
+  addContact(f,{by:'Patient (portal)',mode:'Portal',result:'Help requested',note:v.join(', ')});save();toast('Request sent. Staff will be ready for you.');go('#/patient/followup/'+f.id)},
+ 's-login'(fm){const fd=new FormData(fm),u=STAFF.find(s=>s.id===fd.get('id').trim().toUpperCase()&&s.pw===fd.get('pw')&&s.role===fm.dataset.role);if(!u){toast('Incorrect ID or password for this role');return}SESSION={type:'staff',id:u.id};store.set(SES_KEY,SESSION);go('#/admin')},
+ 'c-contact'(fm){const f=fu(fm.dataset.id),fd=new FormData(fm);addContact(f,{by:staff().name,mode:fd.get('mode'),result:fd.get('result'),note:fd.get('note')});if(fd.get('result')==='Answered – will come')f.confirmed=true;if(fd.get('result')==='Answered – needs help')f.callback=false;save();toast('Contact attempt logged');render()},
+ 'c-note'(fm){fu(fm.dataset.id).note=new FormData(fm).get('note');save();toast('Note saved')},
+ 'c-outcome'(fm){const f=fu(fm.dataset.id),o=new FormData(fm).get('o'),by=staff().name;
+  if(o==='attended'||o==='elsewhere'){f.status='completed';f.outcome=o==='attended'?'Attended at this hospital':'Received care elsewhere (verified)';f.completedOn=plusDays(0)}
+  else if(o==='cancelled'){f.status='closed';f.outcome='Cancelled by doctor'}
+  else{f.escalated=true;addContact(f,{by:by,mode:'Review',result:'Escalated to follow-up desk'})}
+  if(o!=='escalate')addContact(f,{by:by,mode:'Review',result:'Outcome recorded: '+f.outcome});save();toast('Outcome saved');go('#/admin')},
+ 'c-new'(fm){const fd=new FormData(fm),id=uid('F');
+  DB.followups.push({id,pid:fd.get('pid'),title:fd.get('title'),dept:fd.get('dept'),doctor:fd.get('doctor'),due:fd.get('due'),time:fd.get('time'),instructions:fd.get('ins'),docs:fd.get('docs').split(',').map(s=>s.trim()).filter(Boolean),docsReady:[],barriers:[],contacts:[],status:'pending',confirmed:false,planApproved:false,reschedReq:null,callback:false,note:''});
+  const meds=fd.get('meds').split('\n').map(s=>s.trim()).filter(Boolean);if(meds.length)DB.rx.push({id:uid('R'),fid:id,pid:fd.get('pid'),items:meds,status:'pending'});
+  save();toast('Follow-up plan created');go('#/admin/case/'+id)},
+ chat(fm){const q=new FormData(fm).get('q').trim();if(!q)return;UI.msgs.push({u:1,t:q},{t:botReply(q)});renderChat()}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(el&&handlers[el.dataset.act]){e.preventDefault();handlers[el.dataset.act](el)}});
+document.addEventListener('submit',e=>{const fm=e.target.closest('form[data-form]');if(fm&&forms[fm.dataset.form]){e.preventDefault();forms[fm.dataset.form](fm)}});
+document.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.filter)applyFilters()});
+document.addEventListener('change',e=>{
+ const el=e.target,c=el.dataset&&el.dataset.change;if(!c)return;
+ if(c==='lang'){LANG=el.value;store.set(LANG_KEY,LANG);document.documentElement.lang=LANG;render()}
+ else if(c==='doc'){const f=fu(el.dataset.id),i=+el.dataset.i;f.docsReady=el.checked?[...new Set(f.docsReady.concat(i))]:f.docsReady.filter(x=>x!==i);save()}
+ else if(c==='round'){UI.round=el.checked;render()}
+});
+document.documentElement.lang=LANG;
+render();
+</script>
+</body>
+</html>
